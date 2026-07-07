@@ -1,0 +1,48 @@
+version: 1
+target: model
+rules:
+  - id: M6-path-traversal
+    category: M6
+    title: "Archive member uses an absolute or traversal path"
+    severity: high
+    confidence: high
+    match:
+      signal: archive.path_traversal
+      predicate: non_empty
+    rationale: >-
+      A member name containing '..' or an absolute path can escape the extraction
+      directory and overwrite arbitrary files (zip-slip).
+    remediation: >-
+      Reject the artifact. Never extract archives with traversal or absolute member paths.
+    references: ["CWE-22", "CWE-506"]
+
+  - id: M6-decompression-bomb
+    category: M6
+    title: "Archive is a decompression bomb"
+    severity: high
+    confidence: high
+    match:
+      signal: archive.zip_bomb
+      predicate: non_empty
+    rationale: >-
+      An archive whose declared uncompressed size or compression ratio is extreme can
+      exhaust memory or disk when a loader unpacks it (a denial-of-service payload).
+    remediation: >-
+      Do not extract. Reject the artifact; a legitimate model archive does not expand
+      hundreds of times its stored size.
+    references: ["CWE-409", "CWE-400"]
+
+  - id: M6-unexpected-member
+    category: M6
+    title: "Archive contains an unexpected executable or non-model file"
+    severity: medium
+    confidence: medium
+    match:
+      signal: archive.unexpected_member
+      predicate: non_empty
+    rationale: >-
+      PyTorch archives should contain only tensors and metadata; executables, scripts,
+      or shared objects inside are a smuggling signal.
+    remediation: >-
+      Inspect the flagged member. Do not load unless every member is expected.
+    references: ["CWE-506"]

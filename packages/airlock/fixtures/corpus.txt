@@ -1,0 +1,9 @@
+# Airlock demo corpus — one "kind target" per line.
+# Run:  airlock study fixtures/corpus.txt
+# Replace these with real hf: models / MCP commands / tool-spec files for a real study.
+model fixtures/model/poisoned
+model fixtures/model/clean
+model fixtures/model/remote_code
+model fixtures/model/archive_smuggle
+toolspec fixtures/toolspec/poisoned_openai.json
+toolspec fixtures/toolspec/clean_anthropic.json

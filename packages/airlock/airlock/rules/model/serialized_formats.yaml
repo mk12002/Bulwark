@@ -1,0 +1,48 @@
+version: 1
+target: model
+rules:
+  - id: M5-keras-lambda-layer
+    category: M5
+    title: "Keras model contains a Lambda layer (embedded Python)"
+    severity: high
+    confidence: medium
+    match:
+      signal: model.keras_lambda
+      predicate: non_empty
+    rationale: >-
+      Keras Lambda layers store marshalled Python that is compiled and executed when
+      the model is loaded — an arbitrary-code-execution vector equivalent to pickle.
+    remediation: >-
+      Do not load with Lambda layers from an untrusted source. Rebuild the model
+      without Lambda layers, or load only after auditing the embedded code.
+    references: ["OWASP:LLM05", "CWE-502"]
+
+  - id: M5-onnx-custom-python-op
+    category: M5
+    title: "ONNX model references a custom Python operator"
+    severity: high
+    confidence: medium
+    match:
+      signal: model.onnx_custom_op
+      predicate: non_empty
+    rationale: >-
+      Custom Python operators (PyOp/pyfunc via onnxruntime-extensions) execute
+      arbitrary Python during inference.
+    remediation: >-
+      Do not run ONNX models with custom Python operators from an untrusted source.
+    references: ["OWASP:LLM05", "CWE-502"]
+
+  - id: M6-onnx-external-data-traversal
+    category: M6
+    title: "ONNX model references external data via a traversal path"
+    severity: high
+    confidence: medium
+    match:
+      signal: model.onnx_external
+      predicate: non_empty
+    rationale: >-
+      ONNX external-data references are file paths; a '..' traversal path can read or
+      point outside the model directory when the runtime loads tensor data.
+    remediation: >-
+      Reject the model; external-data paths must stay within the model directory.
+    references: ["CWE-22"]

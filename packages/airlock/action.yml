@@ -1,0 +1,68 @@
+name: "Airlock Scan"
+description: "Scan an ML model artifact or MCP server for AI agent supply-chain risks (SARIF/CI)."
+author: "Airlock contributors"
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  scan-type:
+    description: "What to scan: 'model' or 'mcp'."
+    required: true
+  target:
+    description: >-
+      Scan target. For models: a local path or 'hf:org/name'. For MCP: a server
+      command (stdio) or an sse/http URL.
+    required: true
+  format:
+    description: "Report format: terminal | json | html | sarif."
+    required: false
+    default: "sarif"
+  output:
+    description: "File to write the report to (for json/html/sarif formats)."
+    required: false
+    default: "airlock-results.sarif"
+  fail-on:
+    description: "Exit non-zero if any finding is at or above this severity (info|low|medium|high|critical)."
+    required: false
+    default: "high"
+  version:
+    description: >-
+      Optional pip version specifier for Airlock (e.g. '==0.1.0'). When empty, the
+      action installs Airlock from its own checked-out source.
+    required: false
+    default: ""
+
+outputs:
+  results-file:
+    description: "Path to the written report file."
+    value: ${{ inputs.output }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install Airlock
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -n "${{ inputs.version }}" ]; then
+          pip install "airlock${{ inputs.version }}[model,mcp]"
+        elif [ -f "${{ github.action_path }}/pyproject.toml" ]; then
+          pip install "${{ github.action_path }}[model,mcp]"
+        else
+          pip install "airlock[model,mcp]"
+        fi
+
+    - name: Run Airlock scan
+      shell: bash
+      run: |
+        set -o pipefail
+        airlock scan "${{ inputs.scan-type }}" "${{ inputs.target }}" \
+          --format "${{ inputs.format }}" \
+          --fail-on "${{ inputs.fail-on }}" \
+          | tee "${{ inputs.output }}"

@@ -1,0 +1,7 @@
+{
+  "model_type": "custom",
+  "trust_remote_code": true,
+  "auto_map": {
+    "AutoModel": "modeling_custom.CustomModel"
+  }
+}

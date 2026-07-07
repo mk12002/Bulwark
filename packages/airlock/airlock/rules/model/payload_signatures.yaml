@@ -1,0 +1,47 @@
+version: 1
+target: model
+rules:
+  - id: M3-pickle-filesystem
+    category: M3
+    title: "Pickle references a filesystem-write callable"
+    severity: high
+    confidence: high
+    match:
+      signal: pickle.imports
+      pattern: "^(builtins\\.open|io\\.open|os\\.(remove|unlink|rmdir|chmod|rename|makedirs)|shutil\\.[A-Za-z_]+|pathlib\\.[A-Za-z_.]+)$"
+    rationale: >-
+      A filesystem callable referenced from pickle can write, delete, or modify files
+      on load — a hallmark of an embedded payload.
+    remediation: >-
+      Do not load this artifact. Prefer safetensors weights from a trusted source.
+    references: ["OWASP:LLM05", "CWE-502"]
+
+  - id: M3-pickle-dynamic-code
+    category: M3
+    title: "Pickle references a dynamic-import or code-marshal callable"
+    severity: high
+    confidence: high
+    match:
+      signal: pickle.imports
+      pattern: "^(importlib\\.[A-Za-z_.]+|marshal\\.[A-Za-z_]+|codecs\\.decode|base64\\.[A-Za-z_]+|types\\.(FunctionType|CodeType))$"
+    rationale: >-
+      Dynamic import, marshal, and base64/codecs decoding are common ways to stage an
+      obfuscated payload inside a pickle stream.
+    remediation: >-
+      Do not load this artifact. Prefer safetensors weights from a trusted source.
+    references: ["OWASP:LLM05", "CWE-502"]
+
+  - id: M3-suspicious-string
+    category: M3
+    title: "Pickle stream embeds a suspicious string marker"
+    severity: medium
+    confidence: medium
+    match:
+      signal: pickle.strings
+      pattern: "(?i)(/bin/sh|/bin/bash|cmd\\.exe|powershell|curl\\s|wget\\s|nc\\s|-----BEGIN|http[s]?://)"
+    rationale: >-
+      Embedded shell paths, download commands, or URLs inside the pickle stream are
+      strong indicators of a staged payload.
+    remediation: >-
+      Do not load this artifact. Investigate the source before trusting these weights.
+    references: ["OWASP:LLM05"]

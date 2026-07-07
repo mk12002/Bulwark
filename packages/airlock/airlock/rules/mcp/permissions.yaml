@@ -1,0 +1,78 @@
+version: 1
+target: mcp
+rules:
+  - id: P4-shell-execution
+    category: P4
+    title: "Tool exposes shell / command execution"
+    severity: high
+    confidence: high
+    match:
+      signal: tool.capability
+      pattern: "^shell$"
+    rationale: >-
+      A tool that runs shell commands grants the agent arbitrary code execution on the
+      host — the broadest possible capability.
+    remediation: >-
+      Remove or tightly sandbox shell tools; expose only specific, audited actions.
+    references: ["OWASP:LLM06", "CWE-269"]
+
+  - id: P4-filesystem-write
+    category: P4
+    title: "Tool exposes arbitrary filesystem write/delete"
+    severity: high
+    confidence: medium
+    match:
+      signal: tool.capability
+      pattern: "^fs_write$"
+    rationale: >-
+      Unrestricted filesystem write lets the agent modify or destroy host files and
+      can be chained into code execution.
+    remediation: >-
+      Scope filesystem access to an explicit, non-sensitive directory allowlist.
+    references: ["OWASP:LLM06", "CWE-269"]
+
+  - id: P4-network-egress
+    category: P4
+    title: "Tool exposes raw network egress"
+    severity: medium
+    confidence: medium
+    match:
+      signal: tool.capability
+      pattern: "^network$"
+    rationale: >-
+      Raw outbound network access is the sink half of an exfiltration chain and lets
+      the agent reach arbitrary hosts.
+    remediation: >-
+      Restrict egress to an allowlist of required hosts.
+    references: ["OWASP:LLM06", "CWE-269"]
+
+  - id: P4-wildcard-scope
+    category: P4
+    title: "Tool declares a wildcard or unconstrained scope"
+    severity: medium
+    confidence: medium
+    match:
+      signal: tool.wildcard
+      predicate: is_true
+    rationale: >-
+      Wildcard parameters (path='*', scope='all') remove the guardrails that would
+      otherwise limit what the tool can touch.
+    remediation: >-
+      Replace wildcard scopes with explicit, minimal allowlists.
+    references: ["OWASP:LLM06", "CWE-269"]
+
+  - id: P5-cross-tool-exfil
+    category: P5
+    title: "Reachable sensitive-source to network-sink path across tools"
+    severity: high
+    confidence: medium
+    match:
+      signal: exfil.path
+      predicate: non_empty
+    rationale: >-
+      One tool can read sensitive data and another can send it outward; together they
+      form a confused-deputy exfiltration path the user never intended.
+    remediation: >-
+      Separate read-sensitive and network-egress capabilities across trust boundaries,
+      or require explicit human approval between them.
+    references: ["OWASP:LLM06", "OWASP:LLM02"]

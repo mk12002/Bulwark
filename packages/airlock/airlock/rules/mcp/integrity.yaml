@@ -1,0 +1,62 @@
+version: 1
+target: mcp
+rules:
+  - id: P7-definition-changed
+    category: P7
+    title: "Tool definition changed since the last approved baseline"
+    severity: medium
+    confidence: high
+    match:
+      signal: tool.definition_changed
+      predicate: non_empty
+    rationale: >-
+      A server that silently alters a tool definition after approval (rug-pull) can
+      turn a benign tool malicious without the user re-reviewing it.
+    remediation: >-
+      Re-review the changed tool before trusting it; pin servers to reviewed versions.
+    references: ["CWE-494"]
+
+  - id: P8-insecure-transport
+    category: P8
+    title: "Server uses plaintext / unauthenticated transport"
+    severity: medium
+    confidence: high
+    match:
+      signal: transport.insecure
+      predicate: is_true
+    rationale: >-
+      Plaintext (http/ws) transport exposes tool traffic to interception and tampering
+      in transit.
+    remediation: >-
+      Use TLS (https/wss) and authenticate the server endpoint.
+    references: ["CWE-319", "CWE-306"]
+
+  - id: P8-missing-auth
+    category: P8
+    title: "Server exposes tools with no authentication"
+    severity: medium
+    confidence: medium
+    match:
+      signal: auth.missing
+      predicate: is_true
+    rationale: >-
+      An unauthenticated remote MCP endpoint can be reached and driven by anyone who
+      learns its URL.
+    remediation: >-
+      Require authentication for remote MCP servers.
+    references: ["CWE-306"]
+
+  - id: P9-tool-shadowing
+    category: P9
+    title: "Tool name collides with a well-known trusted tool"
+    severity: medium
+    confidence: medium
+    match:
+      signal: tool.name_collision
+      predicate: non_empty
+    rationale: >-
+      A tool that impersonates a well-known name can intercept calls intended for the
+      trusted tool (shadowing).
+    remediation: >-
+      Namespace tools per server and reject collisions with known trusted names.
+    references: ["CWE-706"]

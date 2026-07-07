@@ -1,0 +1,37 @@
+# Example Airlock configuration. Copy to `airlock.toml` to use.
+# Everything here is optional — Airlock runs fully without any config.
+
+# Exit non-zero when any finding is at or above this severity (CLI --fail-on overrides).
+fail_on = "high"
+
+# Default report format (CLI --format overrides): terminal | json | html | sarif
+output_format = "terminal"
+
+# --- Waivers -----------------------------------------------------------------
+# Suppress findings by rule-id glob or by location-path glob. Suppressed findings
+# are hidden from the report and do not affect the exit code, but the count is
+# reported for transparency. Use sparingly and prefer --baseline for CI.
+suppress_rules = []   # e.g. ["M4-*", "M7-no-hashes"]  (advisory noise)
+suppress_paths = []   # e.g. ["vendor/*", "third_party/*.bin"]
+
+# --- Optional AI enrichment layer (off by default) ---------------------------
+# AI runs ONLY when [ai].enabled = true AND the `--ai` flag is passed on the CLI.
+# It enriches findings (semantic triage, poisoning recall, an executive summary);
+# it never replaces, downgrades, or gates on a deterministic finding.
+[ai]
+enabled = false
+
+# provider: ollama | openai_compat | anthropic
+#   ollama         — local, free, no key, no egress (recommended default)
+#   openai_compat  — OpenAI / OpenRouter / LM Studio / vLLM (set base_url + model)
+#   anthropic      — Anthropic Messages API (cheap model recommended for triage)
+provider = "ollama"
+
+model = "qwen2.5-coder"
+base_url = "http://localhost:11434"
+
+# Cap the number of findings enriched per scan (caps calls -> caps cost).
+max_findings_to_enrich = 25
+
+# The API key is NEVER read from this file. Set it in the environment instead:
+#   export AIRLOCK_AI_API_KEY=sk-...

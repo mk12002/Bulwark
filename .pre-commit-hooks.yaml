@@ -1,0 +1,27 @@
+# Airlock pre-commit hooks. In a consuming repo, add to .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/airlock/airlock
+#       rev: v0.1.0
+#       hooks:
+#         - id: airlock-scan-model
+#           args: ["--fail-on", "high"]
+#           files: '\.(bin|pt|pth|ckpt|pkl|safetensors|gguf|onnx|h5|keras|npy|npz)$'
+#         - id: airlock-scan-toolspec
+#           files: 'tools?\.(json|ya?ml)$'
+
+- id: airlock-scan-model
+  name: Airlock model scan
+  description: Scan changed ML model artifacts for supply-chain risks.
+  entry: airlock scan model
+  language: python
+  pass_filenames: true
+  require_serial: true
+
+- id: airlock-scan-toolspec
+  name: Airlock tool-spec scan
+  description: Scan changed agent tool-definition files for poisoning/permission risks.
+  entry: airlock scan toolspec
+  language: python
+  pass_filenames: true
+  require_serial: true

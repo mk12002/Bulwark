@@ -1,0 +1,34 @@
+version: 1
+target: model
+rules:
+  - id: M1-pickle-shell-exec
+    category: M1
+    title: "Pickle references a shell/exec/eval callable"
+    severity: critical
+    confidence: high
+    match:
+      signal: pickle.imports
+      pattern: "^(os\\.system|posix\\.system|nt\\.system|subprocess\\.[A-Za-z_]+|builtins\\.(eval|exec|__import__|compile)|runpy\\.[A-Za-z_]+|pty\\.[A-Za-z_]+|commands\\.[A-Za-z_]+)$"
+    rationale: >-
+      The pickle VM can invoke arbitrary callables on load. A reference to a shell,
+      process-spawning, or code-evaluation callable means loading this artifact can
+      execute arbitrary commands on the host.
+    remediation: >-
+      Do not load this artifact. Obtain a safetensors version from a trusted source,
+      or rebuild the model weights yourself.
+    references: ["OWASP:LLM05", "CWE-502"]
+
+  - id: M1-pickle-network
+    category: M1
+    title: "Pickle references a networking callable"
+    severity: critical
+    confidence: high
+    match:
+      signal: pickle.imports
+      pattern: "^(socket\\.[A-Za-z_]+|urllib\\.[A-Za-z_.]+|requests\\.[A-Za-z_]+|http\\.client\\.[A-Za-z_]+|ftplib\\.[A-Za-z_]+|smtplib\\.[A-Za-z_]+)$"
+    rationale: >-
+      A networking callable referenced from pickle opcodes can open connections on
+      load, enabling exfiltration or remote payload retrieval.
+    remediation: >-
+      Do not load this artifact. Prefer safetensors weights from a trusted source.
+    references: ["OWASP:LLM05", "CWE-502"]

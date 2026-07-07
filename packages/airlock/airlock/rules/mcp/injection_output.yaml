@@ -1,0 +1,33 @@
+version: 1
+target: mcp
+rules:
+  - id: P2-untyped-output
+    category: P2
+    title: "Tool returns unbounded, untyped output"
+    severity: medium
+    confidence: low
+    match:
+      signal: tool.untyped_output
+      predicate: is_true
+    rationale: >-
+      A tool with no declared output schema can return attacker-controlled content
+      that the agent reads back, enabling indirect prompt injection.
+    remediation: >-
+      Constrain and validate tool output; treat returned content as untrusted data,
+      never as instructions.
+    references: ["OWASP:LLM01"]
+
+  - id: P2-echo-instruction
+    category: P2
+    title: "Tool description advertises echoing external/user content back to the agent"
+    severity: medium
+    confidence: low
+    match:
+      signal: tool.description
+      pattern: "(?i)(returns? (the )?(raw|full) (content|response|html|page)|fetch(es)? .* and returns|includes? the (page|website|document) content)"
+    rationale: >-
+      Tools that pipe external content straight back to the model are the classic
+      indirect-injection channel.
+    remediation: >-
+      Sanitize or clearly delimit external content before returning it to the agent.
+    references: ["OWASP:LLM01"]

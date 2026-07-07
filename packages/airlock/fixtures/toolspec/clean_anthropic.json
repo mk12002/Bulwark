@@ -1,0 +1,20 @@
+{
+  "tools": [
+    {
+      "name": "add_numbers",
+      "description": "Add two integers and return their sum.",
+      "input_schema": {
+        "type": "object",
+        "properties": { "a": { "type": "integer" }, "b": { "type": "integer" } }
+      }
+    },
+    {
+      "name": "format_date",
+      "description": "Format an ISO date string into a human-readable form.",
+      "input_schema": {
+        "type": "object",
+        "properties": { "iso": { "type": "string" } }
+      }
+    }
+  ]
+}

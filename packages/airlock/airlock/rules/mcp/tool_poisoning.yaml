@@ -1,0 +1,63 @@
+version: 1
+target: mcp
+rules:
+  - id: P1-desc-override-instruction
+    category: P1
+    title: "Tool description contains agent-directed override instructions"
+    severity: high
+    confidence: medium
+    match:
+      signal: tool.description
+      pattern: "(?i)(ignore (all |the )?(previous|prior|above)|disregard (the |all )?(previous|prior|above)|instead of (using|calling)|always (call|use|run) .* first|do not (tell|inform|mention to) the user|without (telling|informing) the user)"
+    rationale: >-
+      Tool descriptions are read and trusted by the model. Override phrasing aimed at
+      the agent is the signature of tool poisoning (prompt injection via metadata).
+    remediation: >-
+      Reject or sandbox this server and report the tool to the maintainer.
+    references: ["OWASP:LLM01", "MITRE-ATLAS"]
+
+  - id: P1-desc-sensitive-path
+    category: P1
+    title: "Tool description references sensitive files or credentials"
+    severity: high
+    confidence: medium
+    match:
+      signal: tool.description
+      pattern: "(?i)(~/\\.ssh|id_rsa|\\.aws/credentials|/etc/passwd|/etc/shadow|\\.env\\b|private key|api[_ -]?key|secret[_ -]?key|password)"
+    rationale: >-
+      A description instructing the agent to read or pass secret material is a direct
+      exfiltration attempt embedded in tool metadata.
+    remediation: >-
+      Reject this server. A benign tool has no reason to name credential locations.
+    references: ["OWASP:LLM01", "MITRE-ATLAS"]
+
+  - id: P1-desc-references-other-tool
+    category: P1
+    title: "Tool description issues imperative instructions to the agent"
+    severity: medium
+    confidence: low
+    match:
+      signal: tool.description
+      pattern: "(?i)(<important>|<system>|<secret>|before (using|calling) (any|this|other)|you must (first|always)|as an ai|the assistant should)"
+    rationale: >-
+      Second-person imperatives and pseudo-system tags in a description try to steer
+      the agent rather than describe the tool.
+    remediation: >-
+      Review the description; legitimate tools describe behaviour, they do not command
+      the agent.
+    references: ["OWASP:LLM01"]
+
+  - id: P1-param-poisoning
+    category: P1
+    title: "Tool parameter description contains agent-directed instructions"
+    severity: high
+    confidence: medium
+    match:
+      signal: tool.param_doc
+      pattern: "(?i)(ignore (all |the )?(previous|prior)|do not (tell|inform) the user|~/\\.ssh|id_rsa|api[_ -]?key|before (using|calling))"
+    rationale: >-
+      Parameter docs are also read by the model and are an equally effective place to
+      hide poisoning instructions.
+    remediation: >-
+      Reject or sandbox this server and report the tool to the maintainer.
+    references: ["OWASP:LLM01", "MITRE-ATLAS"]

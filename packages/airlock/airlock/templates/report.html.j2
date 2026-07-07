@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Airlock report — {{ result.target }}</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem;
+         background: #0d1117; color: #e6edf3; }
+  h1 { margin: 0 0 .25rem; font-size: 1.4rem; }
+  .meta { color: #8b949e; font-size: .9rem; margin-bottom: 1.5rem; }
+  .sev { display: inline-block; padding: .1rem .5rem; border-radius: 4px;
+         font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+  .critical { background:#8e1519; color:#fff; }
+  .high { background:#a5541b; color:#fff; }
+  .medium { background:#9e7c0b; color:#000; }
+  .low { background:#1f6feb; color:#fff; }
+  .info { background:#30363d; color:#c9d1d9; }
+  details { background:#161b22; border:1px solid #30363d; border-radius:6px;
+            margin-bottom:.6rem; padding:.6rem .9rem; }
+  summary { cursor:pointer; font-weight:600; }
+  .cat { color:#8b949e; font-family: ui-monospace, monospace; margin-right:.5rem; }
+  dl { display:grid; grid-template-columns: max-content 1fr; gap:.2rem .8rem; margin:.6rem 0 0; }
+  dt { color:#8b949e; }
+  code { font-family: ui-monospace, monospace; background:#0d1117; padding:.05rem .3rem;
+         border-radius:4px; word-break: break-all; }
+  .clean { color:#3fb950; font-weight:600; }
+  .ai-summary { border:1px solid #8957e5; background:#1d1030; border-radius:6px;
+                padding:.7rem .9rem; margin-bottom:1rem; color:#d2c4f5; }
+  .ai-tag { background:#8957e5; color:#fff; font-size:.65rem; padding:.05rem .4rem;
+            border-radius:4px; text-transform:uppercase; }
+  .ai-note { color:#d2c4f5; }
+</style>
+</head>
+<body>
+  <h1>Airlock — {{ result.target_type }} scan</h1>
+  <div class="meta">
+    <code>{{ result.target }}</code><br>
+    worst severity: <span class="sev {{ worst }}">{{ worst }}</span>
+    · {{ findings|length }} finding(s)
+    · scanned {{ result.scanned_at }} · airlock {{ result.airlock_version }}
+  </div>
+
+  {% if result.ai_summary %}
+    <div class="ai-summary">
+      <strong>AI summary</strong> <span class="ai-tag">advisory</span><br>
+      {{ result.ai_summary }}
+    </div>
+  {% endif %}
+
+  {% if not findings %}
+    <p class="clean">No findings. Target scanned clean.</p>
+  {% else %}
+    {% for f in findings %}
+    <details>
+      <summary>
+        <span class="sev {{ f.severity.value }}">{{ f.severity.value }}</span>
+        <span class="cat">{{ f.category }}</span>{{ f.title }}
+        {% if f.source == 'ai' %}<span class="ai-tag">AI</span>{% endif %}
+      </summary>
+      <dl>
+        <dt>Evidence</dt><dd><code>{{ f.evidence }}</code></dd>
+        {% if f.ai_assessment %}<dt>AI</dt><dd class="ai-note">{{ f.ai_assessment }}</dd>{% endif %}
+        <dt>Location</dt><dd>{{ f.location.path or '-' }}{% if f.location.detail %} · {{ f.location.detail }}{% endif %}</dd>
+        <dt>Why</dt><dd>{{ f.rationale }}</dd>
+        <dt>Fix</dt><dd>{{ f.remediation }}</dd>
+        <dt>Confidence</dt><dd>{{ f.confidence }}</dd>
+        {% if f.references %}<dt>Refs</dt><dd>{{ f.references|join(', ') }}</dd>{% endif %}
+        <dt>Rule id</dt><dd><code>{{ f.id }}</code></dd>
+      </dl>
+    </details>
+    {% endfor %}
+  {% endif %}
+</body>
+</html>

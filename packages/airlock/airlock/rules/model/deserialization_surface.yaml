@@ -1,0 +1,47 @@
+version: 1
+target: model
+rules:
+  - id: M2-pickle-present
+    category: M2
+    title: "Artifact uses pickle-based serialization"
+    severity: high
+    confidence: high
+    match:
+      signal: model.pickle_file
+      predicate: non_empty
+    rationale: >-
+      Pickle-family formats permit code execution on load even when no payload is
+      currently present. The deserialization capability itself is the risk.
+    remediation: >-
+      Migrate to safetensors, which stores tensors without executable opcodes.
+    references: ["CWE-502"]
+
+  - id: M2-reduce-opcode
+    category: M2
+    title: "Pickle stream contains a REDUCE/NEWOBJ construction opcode"
+    severity: high
+    confidence: medium
+    match:
+      signal: pickle.has_reduce
+      predicate: is_true
+    rationale: >-
+      REDUCE/NEWOBJ opcodes reconstruct arbitrary objects by calling callables from
+      the stack — the mechanism pickle exploits use to run code.
+    remediation: >-
+      Treat the artifact as untrusted; inspect resolved callables and prefer safetensors.
+    references: ["CWE-502"]
+
+  - id: M4-pickle-without-safetensors
+    category: M4
+    title: "Model ships as pickle with no safetensors alternative"
+    severity: medium
+    confidence: high
+    match:
+      signal: model.pickle_without_safetensors
+      predicate: is_true
+    rationale: >-
+      A memory-safe format (safetensors) exists but the artifact ships only pickle,
+      forcing consumers onto the unsafe loader.
+    remediation: >-
+      Publish and load a safetensors version of these weights.
+    references: ["best-practice"]

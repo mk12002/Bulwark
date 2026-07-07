@@ -1,0 +1,19 @@
+# Bulwark workspace root.
+#
+# This declares a monorepo of independently-installable packages under packages/.
+# It is not itself an installable distribution. With `uv` installed:
+#     uv sync
+# Otherwise use pip path installs (see requirements.txt):
+#     pip install -r requirements.txt
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.ruff]
+# Shared lint config; each package may extend it.
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
+ignore = ["B008", "RUF001", "RUF002", "RUF003"]

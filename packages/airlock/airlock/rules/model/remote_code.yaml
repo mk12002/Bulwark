@@ -1,0 +1,47 @@
+version: 1
+target: model
+rules:
+  - id: M5-trust-remote-code
+    category: M5
+    title: "config.json enables trust_remote_code"
+    severity: high
+    confidence: high
+    match:
+      signal: config.trust_remote_code
+      predicate: is_true
+    rationale: >-
+      trust_remote_code:true causes the framework to import and execute Python shipped
+      in the repo when the model loads.
+    remediation: >-
+      Load with trust_remote_code disabled, and review any custom modeling code first.
+    references: ["OWASP:LLM05", "CWE-494"]
+
+  - id: M5-auto-map
+    category: M5
+    title: "config defines an auto_map to custom code"
+    severity: high
+    confidence: high
+    match:
+      signal: config.auto_map
+      predicate: non_empty
+    rationale: >-
+      auto_map points the framework at custom modeling_*.py / configuration_*.py files,
+      which are imported and run at load time.
+    remediation: >-
+      Review the referenced custom code; do not load unless you trust it fully.
+    references: ["OWASP:LLM05", "CWE-494"]
+
+  - id: M5-custom-py-present
+    category: M5
+    title: "Repository ships custom modeling/configuration Python"
+    severity: medium
+    confidence: medium
+    match:
+      signal: repo.custom_py
+      predicate: non_empty
+    rationale: >-
+      Custom modeling_*.py / configuration_*.py files can be auto-imported by loaders
+      that honour trust_remote_code, executing arbitrary repo code.
+    remediation: >-
+      Review each custom Python file before loading with remote code enabled.
+    references: ["OWASP:LLM05", "CWE-494"]

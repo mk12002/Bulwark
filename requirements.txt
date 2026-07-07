@@ -1,0 +1,7 @@
+# Editable dev install of the Bulwark workspace.
+#   pip install -r requirements.txt
+#
+# Installs the shared core first, then Airlock with all optional extras
+# (model scanning, MCP scanning, AI enrichment) and the dev toolchain.
+-e ./packages/bulwark-core
+-e ./packages/airlock[dev,model,mcp,ai]

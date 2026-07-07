@@ -1,0 +1,17 @@
+version: 1
+target: mcp
+rules:
+  - id: P3-hidden-characters
+    category: P3
+    title: "Tool metadata contains hidden or obfuscated unicode"
+    severity: high
+    confidence: high
+    match:
+      signal: tool.hidden_chars
+      predicate: non_empty
+    rationale: >-
+      Zero-width, unicode-tag, bidi-override, or homoglyph characters can smuggle
+      instructions the human reviewer never sees but the model still reads.
+    remediation: >-
+      Reject the server. Legitimate tool names and descriptions use plain visible text.
+    references: ["CWE-176", "OWASP:LLM01"]

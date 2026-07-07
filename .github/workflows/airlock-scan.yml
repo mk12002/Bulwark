@@ -1,0 +1,45 @@
+name: Airlock security scan
+
+# Demonstrates gating a build on Airlock findings and uploading SARIF to GitHub
+# code scanning. It scans the bundled fixtures so a fresh fork lights up findings
+# on the first run; point `target` at your own model/MCP server to adopt it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write # required to upload SARIF to code scanning
+
+jobs:
+  scan-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan model artifact
+        id: scan
+        uses: ./packages/airlock # this repo's action; use `mk12002/Bulwark@v1` from elsewhere
+        continue-on-error: true # let SARIF upload run even when findings gate the build
+        with:
+          scan-type: model
+          target: packages/airlock/fixtures/model/poisoned
+          format: sarif
+          output: airlock-model.sarif
+          fail-on: high
+
+      - name: Upload SARIF to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: airlock-model.sarif
+          category: airlock-model
+
+      - name: Gate the build on findings
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo "Airlock found issues at or above the fail-on threshold."
+          exit 1
