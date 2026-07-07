@@ -1,0 +1,84 @@
+version: 1
+target: system
+rules:
+  - id: B1-unpinned-component
+    category: B1
+    title: "Component used without a pinned version/hash"
+    severity: medium
+    confidence: high
+    match:
+      signal: component.unpinned
+      predicate: non_empty
+    rationale: >-
+      A model/dataset/dependency without a pinned version or hash is non-reproducible and
+      drifts silently — the precondition for an unnoticed supply-chain change.
+    remediation: "Pin the exact version (and a hash where possible)."
+    references: ["SLSA"]
+
+  - id: B2-missing-provenance
+    category: B2
+    title: "Component has no verifiable provenance"
+    severity: medium
+    confidence: medium
+    match:
+      signal: component.no_provenance
+      predicate: non_empty
+    rationale: >-
+      A component with no source, author, version, or hash cannot be verified or audited.
+    remediation: "Record the component's source, version, and a hash."
+    references: ["NIST-AI-RMF", "SLSA"]
+
+  - id: B3-license-risk
+    category: B3
+    title: "Component has a restrictive/unknown license"
+    severity: medium
+    confidence: medium
+    match:
+      signal: component.license_risk
+      predicate: non_empty
+    rationale: >-
+      A restrictive (non-commercial), copyleft, or unknown license on a model/dataset/dep can
+      make the whole system non-compliant when shipped.
+    remediation: "Confirm the license and its compatibility with your intended use."
+    references: ["license-compliance"]
+
+  - id: B6-dataset-governance-gap
+    category: B6
+    title: "Dataset lacks documented governance"
+    severity: medium
+    confidence: medium
+    match:
+      signal: dataset.governance_gap
+      predicate: non_empty
+    rationale: >-
+      A dataset with no documented source, license, or consent is a data-provenance and
+      privacy governance gap.
+    remediation: "Document the dataset's source, license, and consent basis."
+    references: ["NIST-AI-RMF"]
+
+  - id: B7-secret-exposure
+    category: B7
+    title: "Secret/credential referenced in the project"
+    severity: high
+    confidence: medium
+    match:
+      signal: project.secret
+      predicate: non_empty
+    rationale: >-
+      A hardcoded or broadly-scoped credential in the project is a direct leakage vector.
+    remediation: "Remove the secret; source it from a secrets manager / environment at runtime."
+    references: ["CWE-798"]
+
+  - id: B8-unversioned-prompt
+    category: B8
+    title: "Unversioned/untracked prompt template"
+    severity: low
+    confidence: low
+    match:
+      signal: prompt.unversioned
+      predicate: non_empty
+    rationale: >-
+      An inline system prompt with no identifier/version is a change-management gap: it can
+      change behaviour with no review trail.
+    remediation: "Move prompts to versioned template files with stable identifiers."
+    references: ["governance-best-practice"]

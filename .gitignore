@@ -30,3 +30,6 @@ airlock-*.sarif
 .idea/
 .DS_Store
 Thumbs.db
+
+# Downloaded real-world test data (not committed)
+datasets/

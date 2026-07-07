@@ -5,3 +5,4 @@
 -e ./packages/bulwark-core
 -e ./packages/airlock[dev,model,mcp,ai]
 -e ./packages/warden[dev]
+-e ./packages/manifest[dev]

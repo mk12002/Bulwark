@@ -11,10 +11,11 @@ components up to the governable whole.
 | --- | --- | --- | --- |
 | **[Airlock](packages/airlock/)** | the *parts* | Is this model / MCP server / tool-spec itself malicious or unsafe? | **shipped (v0.1)** |
 | **[Warden](packages/warden/)** | the *assembly* | Given how I wired the agent, does it have too much power? | **shipped (v0.1)** |
-| **Manifest** | the *whole system* | What is my AI system made of, and is it governable? | planned |
+| **[Manifest](packages/manifest/)** | the *whole system* | What is my AI system made of, and is it governable? | **shipped (v0.1)** |
 
-They compose: **Manifest** builds an inventory and calls **Airlock** on each model/MCP server and
-**Warden** on each agent assembly, then aggregates everything into one governance artifact (an AI-BOM).
+They compose — literally: **Manifest** builds an inventory and, with `--scan-risk`, calls **Airlock**
+on each model/MCP component and **Warden** on each agent assembly, surfacing their findings inline in
+one CycloneDX AI-BOM + governance report.
 
 ## Why a monorepo
 
@@ -37,7 +38,7 @@ bulwark/
     bulwark-core/           · the shared spine (findings, rule engine, reports, AI layer)
     airlock/                · tool 1 — shipped (models · MCP servers · tool-specs)
     warden/                 · tool 2 — shipped (agent-assembly least-privilege audit)
-    manifest/               · tool 3 — planned
+    manifest/               · tool 3 — shipped (AI-BOM · CycloneDX · governance · risk bridges)
 ```
 
 ## Quickstart (Airlock)
@@ -49,16 +50,19 @@ airlock scan mcp      "python server.py" # an MCP server over stdio, or an sse/h
 airlock scan toolspec tools.json         # OpenAI / Anthropic / LangChain tool definitions
 
 warden  audit agent.yaml --recommend     # audit an agent assembly + suggest a least-privilege version
-warden  import agent.yaml                 # show the normalized AgentSpec
+
+manifest scan ./project --format cyclonedx          # a standards-based ML-BOM of a whole AI project
+manifest scan ./project --scan-risk --govern        # + Airlock/Warden risk inline + NIST AI RMF report
 ```
 
-Both tools are defensive: they detect and report risks, never execute/import the artifacts they
-scan, and their fixtures use benign, inert markers only. Details in
-**[packages/airlock/README.md](packages/airlock/README.md)** and
-**[packages/warden/README.md](packages/warden/README.md)**.
+All three tools are defensive: they detect and report risks, never execute/import the artifacts they
+scan, and their fixtures use benign, inert markers only. Details in each package README:
+**[airlock](packages/airlock/README.md)** · **[warden](packages/warden/README.md)** ·
+**[manifest](packages/manifest/README.md)**.
 
 ## Roadmap
 
 1. **Airlock** — model + MCP + tool-spec scanning, YAML rule packs, SARIF/CI, optional AI enrichment. *(done)*
-2. **`bulwark-core`** extracted from Airlock; **Warden** — agent-assembly least-privilege audit (A1–A10, capability graph, agency score, least-privilege recommendation). *(done)*
-3. Build **Manifest** (system inventory + CycloneDX AI-BOM; orchestrates Airlock + Warden).
+2. **`bulwark-core`** extracted; **Warden** — agent-assembly least-privilege audit (A1–A10, capability graph, agency score, recommendation). *(done)*
+3. **Manifest** — AI-BOM generator (CycloneDX), provenance/license/OSV-vuln resolution, B1–B9 governance, Airlock/Warden risk bridges, NIST AI RMF mapping. *(done)*
+4. Next: PyPI publishing, empirical corpus studies across all three tools, and the AI-BOM drift/diff mode.

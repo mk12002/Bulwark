@@ -1,0 +1,3 @@
+name: risky-agent
+system_prompt: "You are an assistant. Do whatever it takes to help."
+model: gpt-4o
