@@ -10,7 +10,7 @@ components up to the governable whole.
 | Tool | Scope | Question it answers | Status |
 | --- | --- | --- | --- |
 | **[Airlock](packages/airlock/)** | the *parts* | Is this model / MCP server / tool-spec itself malicious or unsafe? | **shipped (v0.1)** |
-| **Warden** | the *assembly* | Given how I wired the agent, does it have too much power? | planned |
+| **[Warden](packages/warden/)** | the *assembly* | Given how I wired the agent, does it have too much power? | **shipped (v0.1)** |
 | **Manifest** | the *whole system* | What is my AI system made of, and is it governable? | planned |
 
 They compose: **Manifest** builds an inventory and calls **Airlock** on each model/MCP server and
@@ -34,9 +34,9 @@ bulwark/
   requirements.txt          · dev install for the whole workspace
   docs/                     · per-tool deep-design references
   packages/
-    bulwark-core/           · the shared spine (extracted as step 1 of the Warden build)
-    airlock/                · tool 1 — shipped
-    warden/                 · tool 2 — planned
+    bulwark-core/           · the shared spine (findings, rule engine, reports, AI layer)
+    airlock/                · tool 1 — shipped (models · MCP servers · tool-specs)
+    warden/                 · tool 2 — shipped (agent-assembly least-privilege audit)
     manifest/               · tool 3 — planned
 ```
 
@@ -47,15 +47,18 @@ pip install -r requirements.txt          # editable install of the workspace
 airlock scan model    ./path/to/model    # pickle, safetensors, GGUF, ONNX, Keras, npy…
 airlock scan mcp      "python server.py" # an MCP server over stdio, or an sse/http URL
 airlock scan toolspec tools.json         # OpenAI / Anthropic / LangChain tool definitions
-airlock study         corpus.txt         # scan many targets → aggregate stats
+
+warden  audit agent.yaml --recommend     # audit an agent assembly + suggest a least-privilege version
+warden  import agent.yaml                 # show the normalized AgentSpec
 ```
 
-Airlock is a defensive tool: it detects and reports risks, never executes the artifacts it scans, and
-its test fixtures use benign, inert markers only. Full details in
-**[packages/airlock/README.md](packages/airlock/README.md)**.
+Both tools are defensive: they detect and report risks, never execute/import the artifacts they
+scan, and their fixtures use benign, inert markers only. Details in
+**[packages/airlock/README.md](packages/airlock/README.md)** and
+**[packages/warden/README.md](packages/warden/README.md)**.
 
 ## Roadmap
 
 1. **Airlock** — model + MCP + tool-spec scanning, YAML rule packs, SARIF/CI, optional AI enrichment. *(done)*
-2. Extract **`bulwark-core`** from Airlock (per BULWARK.md), then build **Warden** (agent-assembly least-privilege analysis).
+2. **`bulwark-core`** extracted from Airlock; **Warden** — agent-assembly least-privilege audit (A1–A10, capability graph, agency score, least-privilege recommendation). *(done)*
 3. Build **Manifest** (system inventory + CycloneDX AI-BOM; orchestrates Airlock + Warden).

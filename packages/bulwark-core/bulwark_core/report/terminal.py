@@ -53,6 +53,7 @@ def render_terminal(
     counts = result.stats
     header_style = _SEVERITY_STYLE[worst] if result.findings else "green"
     summary = _summary_line(counts)
+    score_txt = f"    score: {result.score}/100" if result.score is not None else ""
     con.print(
         Panel(
             Text.assemble(
@@ -61,10 +62,11 @@ def render_terminal(
                 ("\nworst severity: ", "dim"),
                 _severity_text(worst),
                 (f"    findings: {len(result.findings)}", "dim"),
+                (score_txt, "bold"),
                 ("\n", ""),
                 (summary, ""),
             ),
-            title="Airlock",
+            title=(result.tool or "bulwark").title(),
             border_style=header_style,
         )
     )

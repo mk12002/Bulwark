@@ -63,6 +63,10 @@ class ScanResult(BaseModel):
     ai_summary: str | None = None
     # Count of findings hidden by waivers or a baseline diff (for transparency).
     suppressed: int = 0
+    # Optional 0–100 headline score (e.g. Warden's agency score); shown in headers.
+    score: int | None = None
+    # Tool-specific structured metadata (e.g. the normalized AgentSpec).
+    meta: dict = Field(default_factory=dict)
 
     def model_post_init(self, __context: object) -> None:
         """Populate severity counts if not explicitly provided."""

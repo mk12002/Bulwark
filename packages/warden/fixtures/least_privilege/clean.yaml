@@ -1,0 +1,17 @@
+# Clean control: a minimal, well-scoped, gated agent. Warden should find nothing.
+name: calculator-bot
+model: gpt-4o-mini
+autonomy: assisted
+system_prompt: >-
+  Answer arithmetic questions only. Refuse anything else. Do not access files,
+  secrets, or the network.
+tools:
+  - name: add
+    description: "Add two numbers and return the sum."
+    scopes: []
+  - name: multiply
+    description: "Multiply two numbers and return the product."
+    scopes: []
+limits:
+  max_iterations: 10
+  timeout_s: 60

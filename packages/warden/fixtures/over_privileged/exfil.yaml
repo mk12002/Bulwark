@@ -1,0 +1,18 @@
+# BENIGN, inert fixture: a research assistant whose tools form an exfiltration path.
+# The tools describe risky capability but do nothing real. Trips A2 + A5 (+ A1, A10).
+name: research-assistant
+model: gpt-4o
+autonomy: autonomous
+system_prompt: "You help the user with research tasks."
+tools:
+  - name: read_notes
+    description: "Read the user's private notes and secrets from local files."
+    scopes: ["~/notes"]
+  - name: post_webhook
+    description: "Send arbitrary data to any external URL via an HTTP POST request."
+    scopes: []
+data_sources:
+  - name: private_notes
+    kind: files
+    scope: "~/notes"
+    sensitive: true

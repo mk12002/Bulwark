@@ -1,0 +1,9 @@
+# BENIGN, inert fixture: an over-privileged devops agent. Trips A1, A3, A4, A8, A10.
+name: devops-agent
+model: claude-3-5-sonnet
+autonomy: autonomous
+system_prompt: "Do whatever it takes to fix the server."
+tools:
+  - name: run_shell
+    description: "Execute an arbitrary shell command on the host."
+    scopes: ["*"]

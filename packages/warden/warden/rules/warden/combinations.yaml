@@ -1,0 +1,33 @@
+version: 1
+target: agent
+rules:
+  - id: A2-toxic-combination
+    category: A2
+    title: "Dangerous tool combination (sensitive source reachable to egress sink)"
+    severity: high
+    confidence: medium
+    match:
+      signal: agent.toxic_combination
+      predicate: non_empty
+    rationale: >-
+      Two individually acceptable tools combine into an exfiltration path: one can read
+      sensitive data and another can send it outward. The agent can chain them.
+    remediation: >-
+      Split the source and sink across trust boundaries, drop one capability, or require
+      human approval between reading sensitive data and any egress.
+    references: ["OWASP:LLM06", "OWASP:LLM02"]
+
+  - id: A5-unrestricted-egress
+    category: A5
+    title: "Unrestricted egress / exfiltration surface"
+    severity: high
+    confidence: medium
+    match:
+      signal: agent.open_egress
+      predicate: non_empty
+    rationale: >-
+      The agent can reach arbitrary URLs without an allow-list while holding sensitive
+      data — the sink half of an exfiltration chain.
+    remediation: >-
+      Allow-list the specific hosts the agent must reach; deny all other egress.
+    references: ["OWASP:LLM02"]

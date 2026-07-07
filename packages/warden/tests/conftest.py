@@ -1,0 +1,14 @@
+"""Shared paths for Warden tests."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+REPO = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture
+def fixtures() -> Path:
+    return REPO / "fixtures"

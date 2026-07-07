@@ -1,0 +1,47 @@
+version: 1
+target: agent
+rules:
+  - id: A3-missing-human-gate
+    category: A3
+    title: "High-impact tool has no human-in-the-loop gate"
+    severity: high
+    confidence: high
+    match:
+      signal: tool.ungated_high_impact
+      predicate: non_empty
+    rationale: >-
+      Irreversible, destructive, financial, or external-communication actions run with
+      no confirmation/approval, so a hijacked agent executes them unchecked.
+    remediation: >-
+      Require a confirm/approval gate before the tool acts.
+    references: ["OWASP:LLM06"]
+
+  - id: A8-unsandboxed-exec
+    category: A8
+    title: "Code/shell execution without a sandbox"
+    severity: high
+    confidence: high
+    match:
+      signal: tool.unsandboxed_exec
+      predicate: non_empty
+    rationale: >-
+      A code or shell tool without a declared isolation boundary lets the agent run
+      arbitrary commands on the host.
+    remediation: >-
+      Run exec/shell tools inside a sandbox (container/jail) and declare it.
+    references: ["CWE-250"]
+
+  - id: A10-no-runaway-guards
+    category: A10
+    title: "Autonomous agent has no runaway guards"
+    severity: medium
+    confidence: high
+    match:
+      signal: agent.no_runaway_guards
+      predicate: non_empty
+    rationale: >-
+      A looping/autonomous agent with no iteration cap, budget, or timeout can be driven
+      into unbounded cost or destructive loops.
+    remediation: >-
+      Set max_iterations, a budget, and a timeout.
+    references: ["OWASP:LLM06"]

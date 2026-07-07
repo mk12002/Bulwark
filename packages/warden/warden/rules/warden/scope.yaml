@@ -1,0 +1,32 @@
+version: 1
+target: agent
+rules:
+  - id: A1-excessive-tool-scope
+    category: A1
+    title: "Tool granted excessive scope"
+    severity: medium
+    confidence: medium
+    match:
+      signal: tool.excessive_scope
+      predicate: non_empty
+    rationale: >-
+      A tool with a wildcard/unconstrained scope or a broad capability and no scope
+      holds more power than a specific task needs, widening the blast radius.
+    remediation: >-
+      Constrain the tool to an explicit allow-list of paths/hosts/resources it needs.
+    references: ["OWASP:LLM06", "CWE-269"]
+
+  - id: A7-excessive-data-access
+    category: A7
+    title: "Agent has excessive data/memory access"
+    severity: medium
+    confidence: medium
+    match:
+      signal: agent.excessive_data
+      predicate: non_empty
+    rationale: >-
+      Read access to more data (sensitive sources, whole-drive/root scopes) than the
+      stated purpose requires increases what a compromise can reach.
+    remediation: >-
+      Scope data access to the specific sources the agent's task requires.
+    references: ["OWASP:LLM06"]
