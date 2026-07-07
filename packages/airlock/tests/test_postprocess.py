@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from airlock.core.findings import Finding, Location, ScanResult
-from airlock.core.postprocess import apply_baseline, apply_waivers
-from airlock.core.report.json_report import render_json
-from airlock.core.severity import Severity
+from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.postprocess import apply_baseline, apply_waivers
+from bulwark_core.report.json_report import render_json
+from bulwark_core.severity import Severity
 
 
 def _f(fid: str, cat: str, path: str, sev: Severity = Severity.HIGH) -> Finding:

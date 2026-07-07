@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from airlock.core.findings import ScanResult
+from bulwark_core.findings import ScanResult
 
 
 def render_json(result: ScanResult, *, indent: int = 2) -> str:

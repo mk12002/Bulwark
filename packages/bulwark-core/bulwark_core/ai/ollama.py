@@ -6,7 +6,7 @@ Talks to a local Ollama server's ``/api/chat`` endpoint. Recommended models:
 
 from __future__ import annotations
 
-from airlock.ai.provider import AIError
+from bulwark_core.ai.provider import AIError
 
 
 class OllamaProvider:

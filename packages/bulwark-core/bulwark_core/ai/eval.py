@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from airlock.ai.enrich import SEMANTIC_SYSTEM, _extract_json, _semantic_prompt
-from airlock.ai.provider import AIProvider
+from bulwark_core.ai.enrich import SEMANTIC_SYSTEM, _extract_json, _semantic_prompt
+from bulwark_core.ai.provider import AIProvider
 
 
 @dataclass

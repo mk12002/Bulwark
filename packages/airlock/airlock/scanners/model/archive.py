@@ -3,15 +3,16 @@
 PyTorch/ckpt artifacts are zip archives. We enumerate members without extracting
 and flag absolute/traversal member names, unexpected executable/script types, and
 decompression bombs (huge declared uncompressed size or extreme compression
-ratio). Member counts and reads are bounded (see :mod:`airlock.core.limits`).
+ratio). Member counts and reads are bounded (see :mod:`bulwark_core.limits`).
 """
 
 from __future__ import annotations
 
 import zipfile
 
-from airlock.core.limits import DEFAULT_LIMITS, Limits
-from airlock.core.signals import SignalBundle
+from bulwark_core.limits import DEFAULT_LIMITS, Limits
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.model.loader import ArtifactFile
 
 _ZIP_MAGIC = b"PK\x03\x04"

@@ -11,7 +11,8 @@ import json
 import re
 from typing import Any
 
-from airlock.core.signals import SignalBundle
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.model.loader import ArtifactFile, ModelInventory
 
 _CUSTOM_PY_RE = re.compile(

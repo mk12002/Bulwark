@@ -7,8 +7,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from airlock.core.findings import Finding, ScanResult
-from airlock.core.severity import Severity
+from bulwark_core.findings import Finding, ScanResult
+from bulwark_core.severity import Severity
 
 _SEVERITY_STYLE: dict[Severity, str] = {
     Severity.INFO: "dim",

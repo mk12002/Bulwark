@@ -39,7 +39,7 @@
     <code>{{ result.target }}</code><br>
     worst severity: <span class="sev {{ worst }}">{{ worst }}</span>
     · {{ findings|length }} finding(s)
-    · scanned {{ result.scanned_at }} · airlock {{ result.airlock_version }}
+    · scanned {{ result.scanned_at }} · {{ result.tool }} {{ result.tool_version }}
   </div>
 
   {% if result.ai_summary %}

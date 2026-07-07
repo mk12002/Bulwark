@@ -7,7 +7,7 @@ the key in ``AIRLOCK_AI_API_KEY``.
 
 from __future__ import annotations
 
-from airlock.ai.provider import AIError
+from bulwark_core.ai.provider import AIError
 
 
 class OpenAICompatProvider:

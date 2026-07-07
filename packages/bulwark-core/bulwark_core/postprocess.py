@@ -11,7 +11,7 @@ import json
 from fnmatch import fnmatch
 from pathlib import Path
 
-from airlock.core.findings import Finding, ScanResult
+from bulwark_core.findings import Finding, ScanResult
 
 
 def _finding_key(f: Finding) -> tuple[str, str | None, str | None, str]:
@@ -62,7 +62,8 @@ def _rebuild(result: ScanResult, findings: list[Finding], suppressed: int) -> Sc
         target_type=result.target_type,
         findings=findings,
         scanned_at=result.scanned_at,
-        airlock_version=result.airlock_version,
+        tool=result.tool,
+        tool_version=result.tool_version,
         ai_summary=result.ai_summary,
         suppressed=suppressed,
     )

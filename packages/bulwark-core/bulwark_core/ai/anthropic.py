@@ -6,7 +6,7 @@ Key is read from ``AIRLOCK_AI_API_KEY``.
 
 from __future__ import annotations
 
-from airlock.ai.provider import AIError
+from bulwark_core.ai.provider import AIError
 
 _ANTHROPIC_VERSION = "2023-06-01"
 

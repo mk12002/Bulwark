@@ -1,7 +1,7 @@
 """Core pydantic data model: Location, Finding, and ScanResult.
 
-These are the stable, machine-readable shapes every scanner produces and every
-reporter consumes. Severity lives in :mod:`airlock.core.severity`.
+These are the stable, machine-readable shapes every Bulwark tool produces and every
+reporter consumes. Severity lives in :mod:`bulwark_core.severity`.
 """
 
 from __future__ import annotations
@@ -12,12 +12,14 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from airlock import __version__
-from airlock.core.severity import Severity, worst_of
+from bulwark_core import __version__
+from bulwark_core.severity import Severity, worst_of
 
 Confidence = Literal["low", "medium", "high"]
 Source = Literal["rule", "analyzer", "ai"]
-TargetType = Literal["model", "mcp"]
+# Free-form so each tool names its own domain: "model"/"mcp" (Airlock), "agent"
+# (Warden), "system" (Manifest).
+TargetType = str
 
 
 class Location(BaseModel):
@@ -52,9 +54,10 @@ class ScanResult(BaseModel):
 
     target: str
     target_type: TargetType
+    tool: str = "bulwark"  # which Bulwark tool produced this (airlock|warden|manifest)
     findings: list[Finding] = Field(default_factory=list)
     scanned_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    airlock_version: str = __version__
+    tool_version: str = __version__
     stats: dict[str, int] = Field(default_factory=dict)
     # Optional human-readable executive summary produced by the AI layer (opt-in).
     ai_summary: str | None = None

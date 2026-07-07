@@ -18,10 +18,10 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from airlock.ai.provider import AIError, AIProvider, build_provider
-from airlock.config import AIConfig
-from airlock.core.findings import Confidence, Finding, Location, ScanResult
-from airlock.core.severity import Severity
+from bulwark_core.ai.provider import AIError, AIProvider, build_provider
+from bulwark_core.config import AIConfig
+from bulwark_core.findings import Confidence, Finding, Location, ScanResult
+from bulwark_core.severity import Severity
 
 # --------------------------------------------------------------------------- #
 # Prompts
@@ -217,7 +217,8 @@ def enrich(
         target_type=result.target_type,
         findings=triaged,
         scanned_at=result.scanned_at,
-        airlock_version=result.airlock_version,
+        tool=result.tool,
+        tool_version=result.tool_version,
         ai_summary="\n\n".join(summary_parts) if summary_parts else None,
     )
 
@@ -285,7 +286,7 @@ def run_enrichment(
             notes=[f"AI provider unavailable: {exc}; running deterministic-only."],
         )
 
-    from airlock.ai.cache import CachingProvider
+    from bulwark_core.ai.cache import CachingProvider
 
     cached = CachingProvider(prov)
     try:

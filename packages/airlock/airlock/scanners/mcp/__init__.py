@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from airlock.core.findings import Finding, Location, ScanResult
-from airlock.core.rules import RuleEngine
-from airlock.core.scanner import Scanner
-from airlock.core.severity import Severity
-from airlock.core.signals import SignalBundle
+from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.scanner import Scanner
+from bulwark_core.severity import Severity
+from bulwark_core.signals import SignalBundle
+
+from airlock.rules import RuleEngine
 from airlock.scanners.mcp import descriptions, integrity, permissions, secrets
 from airlock.scanners.mcp.client import MCPInventory, enumerate_target
 
@@ -25,6 +26,7 @@ Connector = Callable[[str], MCPInventory]
 class MCPScanner(Scanner):
     """Static scanner for MCP servers."""
 
+    tool = "airlock"
     target_type = "mcp"
 
     def __init__(self, engine: RuleEngine, connector: Connector | None = None):
@@ -67,7 +69,9 @@ class MCPScanner(Scanner):
                     source="analyzer",
                 )
             )
-        return ScanResult(target=target, target_type="mcp", findings=_dedupe(findings))
+        return ScanResult(
+            target=target, target_type="mcp", tool="airlock", findings=_dedupe(findings)
+        )
 
 
 def _dedupe(findings: list[Finding]) -> list[Finding]:

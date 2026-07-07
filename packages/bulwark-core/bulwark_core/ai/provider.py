@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from typing import Protocol, runtime_checkable
 
-from airlock.config import AIConfig
+from bulwark_core.config import AIConfig
 
 API_KEY_ENV = "AIRLOCK_AI_API_KEY"
 
@@ -48,12 +48,12 @@ def build_provider(config: AIConfig) -> AIProvider:
     """
     provider = config.provider.lower()
     if provider == "ollama":
-        from airlock.ai.ollama import OllamaProvider
+        from bulwark_core.ai.ollama import OllamaProvider
 
         return OllamaProvider(model=config.model, base_url=config.base_url)
 
     if provider == "openai_compat":
-        from airlock.ai.openai_compat import OpenAICompatProvider
+        from bulwark_core.ai.openai_compat import OpenAICompatProvider
 
         return OpenAICompatProvider(
             model=config.model,
@@ -62,7 +62,7 @@ def build_provider(config: AIConfig) -> AIProvider:
         )
 
     if provider == "anthropic":
-        from airlock.ai.anthropic import AnthropicProvider
+        from bulwark_core.ai.anthropic import AnthropicProvider
 
         key = env_api_key()
         if not key:

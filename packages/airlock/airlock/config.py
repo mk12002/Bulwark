@@ -9,24 +9,12 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from bulwark_core.config import AIConfig
+from bulwark_core.severity import Severity
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from airlock.core.severity import Severity
-
-
-class AIConfig(BaseModel):
-    """Optional AI enrichment settings. Disabled by default.
-
-    The API key is intentionally NOT a field here: it is read from the environment
-    variable ``AIRLOCK_AI_API_KEY`` at provider-build time and never from disk.
-    """
-
-    enabled: bool = False
-    provider: str = "ollama"  # ollama | openai_compat | anthropic
-    model: str = "qwen2.5-coder"
-    base_url: str = "http://localhost:11434"
-    max_findings_to_enrich: int = 25
+__all__ = ["AIConfig", "AirlockSettings", "load_settings"]
 
 
 class AirlockSettings(BaseSettings):

@@ -7,10 +7,11 @@ scanner never deserializes or imports the artifact.
 
 from __future__ import annotations
 
-from airlock.core.findings import Finding, Location, ScanResult
-from airlock.core.scanner import Scanner
-from airlock.core.severity import Severity
-from airlock.core.signals import SignalBundle
+from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.scanner import Scanner
+from bulwark_core.severity import Severity
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.model import (
     archive,
     formats,
@@ -27,6 +28,7 @@ __all__ = ["ModelScanner"]
 class ModelScanner(Scanner):
     """Static scanner for ML model artifacts."""
 
+    tool = "airlock"
     target_type = "model"
 
     def collect_signals(self, target: str) -> SignalBundle:
@@ -47,6 +49,7 @@ class ModelScanner(Scanner):
             return ScanResult(
                 target=target,
                 target_type="model",
+                tool="airlock",
                 findings=[
                     Finding(
                         id="AIRLOCK-resolve-error",

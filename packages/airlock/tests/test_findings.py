@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from airlock.core.findings import Finding, Location, ScanResult
-from airlock.core.severity import Severity, parse_severity, worst_of
+from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.severity import Severity, parse_severity, worst_of
 
 
 def _finding(sev: Severity, cat: str = "M1", fid: str = "x") -> Finding:

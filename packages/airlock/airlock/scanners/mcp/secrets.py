@@ -11,7 +11,8 @@ import re
 from collections import Counter
 from typing import Any
 
-from airlock.core.signals import SignalBundle
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.mcp.client import MCPInventory, ToolDef
 
 # High-signal token formats. Kept conservative to limit false positives.

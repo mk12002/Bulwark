@@ -4,18 +4,20 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from airlock.core.findings import ScanResult, TargetType
-from airlock.core.rules import RuleEngine
-from airlock.core.signals import SignalBundle
+from bulwark_core.findings import ScanResult, TargetType
+from bulwark_core.rules import RuleEngine
+from bulwark_core.signals import SignalBundle
 
 
 class Scanner(ABC):
-    """Base class for a scan target type (model, mcp).
+    """Base class for a scan target type.
 
     Subclasses gather signals from a target and hand them to the injected rule
-    engine. They may also append analyzer-sourced findings directly.
+    engine. They may also append analyzer-sourced findings directly. ``tool`` and
+    ``target_type`` label the produced :class:`ScanResult`.
     """
 
+    tool: str = "bulwark"
     target_type: TargetType
 
     def __init__(self, engine: RuleEngine):
@@ -45,5 +47,6 @@ class Scanner(ABC):
         return ScanResult(
             target=target,
             target_type=self.target_type,
+            tool=self.tool,
             findings=unique,
         )

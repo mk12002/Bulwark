@@ -11,7 +11,8 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from airlock.core.signals import SignalBundle
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.mcp.client import MCPInventory, ToolDef
 
 # Codepoints that are invisible or can smuggle/obfuscate instructions.

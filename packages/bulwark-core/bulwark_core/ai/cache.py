@@ -13,7 +13,7 @@ import json
 import os
 from pathlib import Path
 
-from airlock.ai.provider import AIProvider
+from bulwark_core.ai.provider import AIProvider
 
 
 def state_dir() -> Path:

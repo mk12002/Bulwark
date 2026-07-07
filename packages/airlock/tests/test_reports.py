@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 
-from airlock.core.findings import Finding, Location, ScanResult
-from airlock.core.report import render_report
-from airlock.core.report.sarif import render_sarif
-from airlock.core.report.terminal import render_terminal
-from airlock.core.severity import Severity
+from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.report import render_report
+from bulwark_core.report.sarif import render_sarif
+from bulwark_core.report.terminal import render_terminal
+from bulwark_core.severity import Severity
 from rich.console import Console
 
 
@@ -16,6 +16,7 @@ def _result() -> ScanResult:
     return ScanResult(
         target="fixtures/model/poisoned",
         target_type="model",
+        tool="airlock",
         findings=[
             Finding(
                 id="M1-pickle-shell-exec",
@@ -50,7 +51,7 @@ def test_sarif_shape() -> None:
     result = run["results"][0]
     assert result["ruleId"] == "M1"
     assert result["level"] == "error"  # critical -> error
-    assert result["properties"]["airlockId"] == "M1-pickle-shell-exec"
+    assert result["properties"]["ruleInstanceId"] == "M1-pickle-shell-exec"
 
 
 def test_sarif_rule_descriptors_unique() -> None:

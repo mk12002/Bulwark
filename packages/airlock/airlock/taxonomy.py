@@ -1,22 +1,35 @@
 """The Airlock risk taxonomy: model (M1–M7) and MCP (P1–P9) categories.
 
-Every :class:`~airlock.core.findings.Finding` maps to exactly one category here.
-Each category carries a human title, a one-line description, its default severity,
-and reference links (OWASP LLM Top 10 / MITRE ATLAS / CWE).
+Airlock's category codes are registered into the shared ``bulwark_core`` registry
+at import, so the rule loader can validate them and reporters can look up titles/
+references. Importing :mod:`airlock` triggers this registration.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from enum import StrEnum
 
-from airlock.core.severity import Severity
+from bulwark_core.severity import Severity
+from bulwark_core.taxonomy import (
+    CategoryInfo,
+    all_categories,
+    categories_for,
+    category_info,
+    register_categories,
+)
+
+__all__ = [
+    "Category",
+    "CategoryInfo",
+    "all_categories",
+    "categories_for",
+    "category_info",
+]
 
 
 class Category(StrEnum):
-    """Taxonomy codes. String-valued so findings can carry the code directly."""
+    """Airlock taxonomy codes. String-valued so findings carry the code directly."""
 
-    # Model artifact risks
     M1 = "M1"
     M2 = "M2"
     M3 = "M3"
@@ -24,7 +37,6 @@ class Category(StrEnum):
     M5 = "M5"
     M6 = "M6"
     M7 = "M7"
-    # MCP server risks
     P1 = "P1"
     P2 = "P2"
     P3 = "P3"
@@ -36,21 +48,9 @@ class Category(StrEnum):
     P9 = "P9"
 
 
-@dataclass(frozen=True)
-class CategoryInfo:
-    """Static metadata about one taxonomy category."""
-
-    code: Category
-    target: str  # "model" | "mcp"
-    title: str
-    description: str
-    default_severity: Severity
-    references: tuple[str, ...] = field(default_factory=tuple)
-
-
-_CATALOG: dict[Category, CategoryInfo] = {
-    Category.M1: CategoryInfo(
-        code=Category.M1,
+_CATEGORIES: list[CategoryInfo] = [
+    CategoryInfo(
+        code="M1",
         target="model",
         title="Arbitrary code execution via pickle deserialization",
         description=(
@@ -60,8 +60,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.CRITICAL,
         references=("OWASP:LLM05", "CWE-502"),
     ),
-    Category.M2: CategoryInfo(
-        code=Category.M2,
+    CategoryInfo(
+        code="M2",
         target="model",
         title="Unsafe deserialization surface",
         description=(
@@ -71,8 +71,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("CWE-502",),
     ),
-    Category.M3: CategoryInfo(
-        code=Category.M3,
+    CategoryInfo(
+        code="M3",
         target="model",
         title="Suspicious payload signatures",
         description=(
@@ -82,8 +82,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("OWASP:LLM05",),
     ),
-    Category.M4: CategoryInfo(
-        code=Category.M4,
+    CategoryInfo(
+        code="M4",
         target="model",
         title="Risky serialization format",
         description=(
@@ -92,8 +92,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.MEDIUM,
         references=("best-practice",),
     ),
-    Category.M5: CategoryInfo(
-        code=Category.M5,
+    CategoryInfo(
+        code="M5",
         target="model",
         title="Remote/custom code execution via config",
         description=(
@@ -103,8 +103,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("OWASP:LLM05", "CWE-494"),
     ),
-    Category.M6: CategoryInfo(
-        code=Category.M6,
+    CategoryInfo(
+        code="M6",
         target="model",
         title="Archive smuggling",
         description=(
@@ -114,8 +114,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("CWE-22", "CWE-506"),
     ),
-    Category.M7: CategoryInfo(
-        code=Category.M7,
+    CategoryInfo(
+        code="M7",
         target="model",
         title="Provenance & integrity gaps",
         description=(
@@ -125,8 +125,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.LOW,
         references=("OWASP:LLM05", "SLSA"),
     ),
-    Category.P1: CategoryInfo(
-        code=Category.P1,
+    CategoryInfo(
+        code="P1",
         target="mcp",
         title="Tool poisoning",
         description=(
@@ -136,8 +136,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("OWASP:LLM01", "MITRE-ATLAS"),
     ),
-    Category.P2: CategoryInfo(
-        code=Category.P2,
+    CategoryInfo(
+        code="P2",
         target="mcp",
         title="Injection via tool output",
         description=(
@@ -147,8 +147,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("OWASP:LLM01",),
     ),
-    Category.P3: CategoryInfo(
-        code=Category.P3,
+    CategoryInfo(
+        code="P3",
         target="mcp",
         title="Hidden / obfuscated content",
         description=(
@@ -158,8 +158,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("CWE-176", "OWASP:LLM01"),
     ),
-    Category.P4: CategoryInfo(
-        code=Category.P4,
+    CategoryInfo(
+        code="P4",
         target="mcp",
         title="Over-permissioned tools",
         description=(
@@ -169,8 +169,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("OWASP:LLM06", "CWE-269"),
     ),
-    Category.P5: CategoryInfo(
-        code=Category.P5,
+    CategoryInfo(
+        code="P5",
         target="mcp",
         title="Confused deputy / cross-tool exfiltration",
         description=(
@@ -180,8 +180,8 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("OWASP:LLM06", "OWASP:LLM02"),
     ),
-    Category.P6: CategoryInfo(
-        code=Category.P6,
+    CategoryInfo(
+        code="P6",
         target="mcp",
         title="Secret / credential leakage",
         description=(
@@ -191,24 +191,24 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.HIGH,
         references=("OWASP:LLM02", "CWE-798"),
     ),
-    Category.P7: CategoryInfo(
-        code=Category.P7,
+    CategoryInfo(
+        code="P7",
         target="mcp",
         title="Rug-pull / TOFU risk",
-        description=("A server can silently change tool definitions after the user approved them."),
+        description="A server can silently change tool definitions after the user approved them.",
         default_severity=Severity.MEDIUM,
         references=("CWE-494",),
     ),
-    Category.P8: CategoryInfo(
-        code=Category.P8,
+    CategoryInfo(
+        code="P8",
         target="mcp",
         title="Insecure transport / weak auth",
         description="Plaintext transport, no authentication, or credentials passed insecurely.",
         default_severity=Severity.MEDIUM,
         references=("CWE-319", "CWE-306"),
     ),
-    Category.P9: CategoryInfo(
-        code=Category.P9,
+    CategoryInfo(
+        code="P9",
         target="mcp",
         title="Tool shadowing / name collision",
         description=(
@@ -218,24 +218,6 @@ _CATALOG: dict[Category, CategoryInfo] = {
         default_severity=Severity.MEDIUM,
         references=("CWE-706",),
     ),
-}
+]
 
-
-def category_info(code: Category | str) -> CategoryInfo:
-    """Look up static metadata for a category code.
-
-    Accepts either a :class:`Category` or its string value (e.g. ``"M1"``).
-    Raises ``KeyError`` for unknown codes.
-    """
-    key = code if isinstance(code, Category) else Category(code)
-    return _CATALOG[key]
-
-
-def all_categories() -> list[CategoryInfo]:
-    """Return every category's metadata, in taxonomy order."""
-    return list(_CATALOG.values())
-
-
-def categories_for(target: str) -> list[CategoryInfo]:
-    """Return category metadata for a scan target ('model' or 'mcp')."""
-    return [c for c in _CATALOG.values() if c.target == target]
+register_categories(_CATEGORIES)

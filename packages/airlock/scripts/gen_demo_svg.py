@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from airlock.core.report.terminal import render_terminal
-from airlock.core.rules import RuleEngine, load_rules
+from airlock.rules import RuleEngine, load_rules
 from airlock.scanners.model import ModelScanner
+from bulwark_core.report.terminal import render_terminal
 from rich.console import Console
 
 REPO_ROOT = Path(__file__).resolve().parents[1]

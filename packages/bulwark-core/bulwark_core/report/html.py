@@ -6,9 +6,9 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from airlock.core.findings import ScanResult
+from bulwark_core.findings import ScanResult
 
-_TEMPLATE_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
+_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 
 def _environment() -> Environment:

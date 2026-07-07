@@ -14,7 +14,8 @@ import json
 import os
 from pathlib import Path
 
-from airlock.core.signals import SignalBundle
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.mcp.client import MCPInventory, ToolDef
 
 # A small starter set of well-known tool names worth protecting from shadowing.

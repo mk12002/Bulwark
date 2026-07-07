@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import sys
 
-from airlock.ai.eval import DEFAULT_DATASET, evaluate
-from airlock.ai.provider import AIError, build_provider
 from airlock.config import load_settings
+from bulwark_core.ai.eval import DEFAULT_DATASET, evaluate
+from bulwark_core.ai.provider import AIError, build_provider
 
 
 def main() -> int:

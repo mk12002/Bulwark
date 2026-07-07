@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import re
 
-from airlock.core.signals import SignalBundle
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.mcp.client import MCPInventory, ToolDef
 
 # Capability -> regex over the tool's combined text (all case-insensitive).

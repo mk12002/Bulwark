@@ -17,8 +17,9 @@ import ast
 import io
 import zipfile
 
-from airlock.core.limits import DEFAULT_LIMITS, Limits
-from airlock.core.signals import SignalBundle
+from bulwark_core.limits import DEFAULT_LIMITS, Limits
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.model.loader import ArtifactFile
 from airlock.scanners.model.pickle_scan import analyze_stream
 

@@ -10,10 +10,10 @@ from __future__ import annotations
 import hashlib
 import json
 
-from airlock import __version__
-from airlock.core.findings import Finding, ScanResult
-from airlock.core.severity import Severity
-from airlock.core.taxonomy import Category, category_info
+from bulwark_core import __version__
+from bulwark_core.findings import Finding, ScanResult
+from bulwark_core.severity import Severity
+from bulwark_core.taxonomy import category_info, is_known
 
 # SARIF only has: none | note | warning | error.
 _SARIF_LEVEL: dict[Severity, str] = {
@@ -33,15 +33,14 @@ _SECURITY_SEVERITY: dict[Severity, str] = {
     Severity.CRITICAL: "9.5",
 }
 
-_INFO_URI = "https://github.com/airlock/airlock"
+_INFO_URI = "https://github.com/mk12002/Bulwark"
 
 
 def _category_meta(category: str) -> tuple[str, tuple[str, ...]]:
-    """Return (description, references) for a taxonomy category, if known."""
-    try:
-        info = category_info(Category(category))
-    except (ValueError, KeyError):
+    """Return (description, references) for a taxonomy category, if registered."""
+    if not is_known(category):
         return "", ()
+    info = category_info(category)
     return info.description, info.references
 
 
@@ -89,9 +88,9 @@ def _result(f: Finding) -> dict:
                 "logicalLocations": [{"name": f.location.detail or f.id}],
             }
         ],
-        "partialFingerprints": {"airlock/v1": _fingerprint(f)},
+        "partialFingerprints": {"bulwark/v1": _fingerprint(f)},
         "properties": {
-            "airlockId": f.id,
+            "ruleInstanceId": f.id,
             "severity": f.severity.value,
             "confidence": f.confidence,
             "rationale": f.rationale,
@@ -112,18 +111,19 @@ def render_sarif(result: ScanResult) -> str:
     rules = [_rule_descriptor(cat, fs) for cat, fs in sorted(by_category.items())]
     results = [_result(f) for f in result.sorted_findings()]
 
+    driver_name = (result.tool or "bulwark").title()
     run: dict = {
         "tool": {
             "driver": {
-                "name": "Airlock",
+                "name": driver_name,
                 "informationUri": _INFO_URI,
-                "version": __version__,
+                "version": result.tool_version or __version__,
                 "rules": rules,
             }
         },
         "results": results,
     }
-    props: dict = {"airlockTargetType": result.target_type}
+    props: dict = {"targetType": result.target_type, "tool": result.tool}
     if result.ai_summary:
         props["aiSummary"] = result.ai_summary
     if result.suppressed:

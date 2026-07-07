@@ -10,8 +10,9 @@ from __future__ import annotations
 import hashlib
 import re
 
-from airlock.core.limits import DEFAULT_LIMITS
-from airlock.core.signals import SignalBundle
+from bulwark_core.limits import DEFAULT_LIMITS
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.model.loader import ArtifactFile, ModelInventory
 
 _MODEL_CARD_NAMES = {"readme.md", "model_card.md", "modelcard.md"}

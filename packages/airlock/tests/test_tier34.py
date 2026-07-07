@@ -6,14 +6,14 @@ import json
 from pathlib import Path
 
 import pytest
-from airlock.ai.cache import CachingProvider
-from airlock.ai.eval import DEFAULT_DATASET, evaluate
-from airlock.core.findings import Finding, Location, ScanResult
-from airlock.core.report.sarif import render_sarif
-from airlock.core.rule_feed import update_rules
-from airlock.core.rules import RuleLoadError, load_rules
-from airlock.core.severity import Severity
-from airlock.core.study import CorpusItem, render_markdown, run_study
+from airlock.rules import RuleLoadError, load_rules
+from bulwark_core.ai.cache import CachingProvider
+from bulwark_core.ai.eval import DEFAULT_DATASET, evaluate
+from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.report.sarif import render_sarif
+from bulwark_core.rule_feed import update_rules
+from bulwark_core.severity import Severity
+from bulwark_core.study import CorpusItem, render_markdown, run_study
 
 # --------------------------------------------------------------------------- #
 # Rule feed
@@ -75,7 +75,9 @@ def test_update_skips_duplicate_and_invalid(tmp_path: Path) -> None:
     (src / "bad.yaml").write_text(_INVALID_PACK, encoding="utf-8")
     dest = tmp_path / "userrules"
 
-    result = update_rules(str(src), dest=dest)
+    # M1-pickle-shell-exec collides with a packaged Airlock rule id.
+    known = {"M1-pickle-shell-exec"}
+    result = update_rules(str(src), dest=dest, known_ids=known)
     assert result.installed == []
     assert len(result.skipped) == 2
 
@@ -131,7 +133,7 @@ def test_run_study_aggregates() -> None:
     assert abs(report.prevalence - 2 / 3) < 1e-9
     assert report.by_category["M1"] == 2
     assert report.top_rules[0][1] == 2  # M1-x hit twice
-    assert "Airlock corpus scan" in render_markdown(report)
+    assert "Bulwark corpus scan" in render_markdown(report)
 
 
 def test_run_study_records_errors() -> None:
@@ -243,8 +245,8 @@ def test_sarif_has_fingerprints_and_help() -> None:
     assert rule["properties"]["security-severity"] == "9.5"
     assert "security" in rule["properties"]["tags"]
     result = data["runs"][0]["results"][0]
-    assert result["partialFingerprints"]["airlock/v1"]
-    assert data["runs"][0]["properties"]["airlockTargetType"] == "model"
+    assert result["partialFingerprints"]["bulwark/v1"]
+    assert data["runs"][0]["properties"]["targetType"] == "model"
 
 
 def test_sarif_fingerprint_is_stable() -> None:

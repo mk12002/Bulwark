@@ -10,8 +10,8 @@ See ``docs/PROJECT_REFERENCE.md`` §9 for the design.
 
 from __future__ import annotations
 
-from airlock.ai.enrich import EnrichmentOutcome, run_enrichment
-from airlock.ai.provider import AIError, AIProvider, build_provider
+from bulwark_core.ai.enrich import EnrichmentOutcome, run_enrichment
+from bulwark_core.ai.provider import AIError, AIProvider, build_provider
 
 __all__ = [
     "AIError",

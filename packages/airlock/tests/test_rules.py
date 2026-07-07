@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from airlock.core.rules import (
+from airlock.rules import (
     LoadedRule,
     Rule,
     RuleEngine,
@@ -13,7 +13,7 @@ from airlock.core.rules import (
     load_rule_pack,
     load_rules,
 )
-from airlock.core.signals import SignalBundle
+from bulwark_core.signals import SignalBundle
 
 
 def test_packaged_rules_load_and_are_unique() -> None:

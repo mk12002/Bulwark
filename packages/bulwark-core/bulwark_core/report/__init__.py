@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from airlock.core.findings import ScanResult
-from airlock.core.report.json_report import render_json
-from airlock.core.report.terminal import render_terminal
+from bulwark_core.findings import ScanResult
+from bulwark_core.report.json_report import render_json
+from bulwark_core.report.terminal import render_terminal
 
 __all__ = ["render_json", "render_report", "render_terminal"]
 
@@ -22,11 +22,11 @@ def render_report(result: ScanResult, fmt: str, *, quiet: bool = False) -> str:
     if fmt == "json":
         return render_json(result)
     if fmt == "html":
-        from airlock.core.report.html import render_html
+        from bulwark_core.report.html import render_html
 
         return render_html(result)
     if fmt == "sarif":
-        from airlock.core.report.sarif import render_sarif
+        from bulwark_core.report.sarif import render_sarif
 
         return render_sarif(result)
     raise ValueError(f"unknown output format {fmt!r}; expected terminal|json|html|sarif")

@@ -20,10 +20,10 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from airlock.core.findings import Confidence, Finding, Location
-from airlock.core.severity import Severity
-from airlock.core.signals import Signal, SignalBundle
-from airlock.core.taxonomy import Category
+from bulwark_core.findings import Confidence, Finding, Location
+from bulwark_core.severity import Severity
+from bulwark_core.signals import Signal, SignalBundle
+from bulwark_core.taxonomy import is_known
 
 # --------------------------------------------------------------------------- #
 # Predicate registry — the only non-regex checks a rule may invoke.
@@ -144,10 +144,8 @@ class Rule(BaseModel):
     @field_validator("category")
     @classmethod
     def _known_category(cls, v: str) -> str:
-        try:
-            Category(v)
-        except ValueError as exc:
-            raise ValueError(f"unknown taxonomy category {v!r}") from exc
+        if not is_known(v):
+            raise ValueError(f"unknown taxonomy category {v!r} (not registered by any tool)")
         return v
 
 
@@ -163,8 +161,8 @@ class RulePack(BaseModel):
     @field_validator("target")
     @classmethod
     def _known_target(cls, v: str) -> str:
-        if v not in ("model", "mcp"):
-            raise ValueError(f"target must be 'model' or 'mcp', got {v!r}")
+        if not v or not v.isidentifier():
+            raise ValueError(f"target must be a non-empty identifier, got {v!r}")
         return v
 
 
@@ -186,24 +184,6 @@ class RuleLoadError(Exception):
 # --------------------------------------------------------------------------- #
 
 
-def default_rules_dir() -> Path:
-    """Return the packaged rules directory (``airlock/rules``)."""
-    return Path(__file__).resolve().parent.parent / "rules"
-
-
-def user_rules_dir() -> Path:
-    """Return the user/community rules directory (installed by ``rules update``).
-
-    Overridable with ``AIRLOCK_RULES_DIR``; defaults to ``~/.airlock/rules``.
-    """
-    import os
-
-    override = os.environ.get("AIRLOCK_RULES_DIR")
-    if override:
-        return Path(override)
-    return Path.home() / ".airlock" / "rules"
-
-
 def load_rule_pack(path: Path) -> tuple[RulePack, list[LoadedRule]]:
     """Load and validate one YAML rule pack file."""
     try:
@@ -220,15 +200,12 @@ def load_rule_pack(path: Path) -> tuple[RulePack, list[LoadedRule]]:
     return pack, loaded
 
 
-def load_rules(rules_dir: Path | None = None) -> list[LoadedRule]:
-    """Load every ``*.yaml`` rule pack, packaged plus community.
+def load_rule_dirs(roots: list[Path]) -> list[LoadedRule]:
+    """Load every ``*.yaml`` rule pack under each root directory, in order.
 
-    When ``rules_dir`` is given, only that directory is loaded. Otherwise the
-    packaged rules and the user rules dir (see :func:`user_rules_dir`) are merged.
-    Raises :class:`RuleLoadError` on an invalid pack or a duplicate rule id.
+    Raises :class:`RuleLoadError` on an invalid pack or a duplicate rule id across
+    all roots. Each tool passes its own packaged + user rule directories.
     """
-    roots = [rules_dir] if rules_dir is not None else [default_rules_dir(), user_rules_dir()]
-
     loaded: list[LoadedRule] = []
     seen_ids: dict[str, Path] = {}
     for root in roots:

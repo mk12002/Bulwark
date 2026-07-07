@@ -14,9 +14,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from airlock import __version__
-from airlock.core.findings import ScanResult
-from airlock.core.severity import Severity
+from bulwark_core import __version__
+from bulwark_core.findings import ScanResult
+from bulwark_core.severity import Severity
 
 
 @dataclass
@@ -39,7 +39,7 @@ class StudyReport:
     by_severity: dict[str, int] = field(default_factory=dict)
     top_rules: list[tuple[str, int]] = field(default_factory=list)
     per_target: list[dict[str, object]] = field(default_factory=list)
-    airlock_version: str = __version__
+    tool_version: str = __version__
     rule_count: int = 0
     generated_at: str = ""
 
@@ -99,9 +99,9 @@ def run_study(items: list[CorpusItem], scan_fn: ScanFn, *, rule_count: int = 0) 
 def render_markdown(report: StudyReport) -> str:
     """Render a study report as a shareable Markdown document."""
     lines = [
-        "# Airlock corpus scan",
+        "# Bulwark corpus scan",
         "",
-        f"- Airlock version: `{report.airlock_version}` -- rules: {report.rule_count}",
+        f"- Airlock version: `{report.tool_version}` -- rules: {report.rule_count}",
         f"- Generated: {report.generated_at}",
         f"- Targets: {report.total} ({report.scanned} scanned, {report.errored} errored)",
         f"- **Prevalence: {report.prevalence:.0%}** of scanned targets had >=1 finding",

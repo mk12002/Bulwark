@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from airlock.core.rules import RuleEngine, load_rules
+from airlock.rules import RuleEngine, load_rules
 from airlock.scanners.mcp import MCPScanner
 from airlock.scanners.mcp.client import MCPInventory, ToolDef
 

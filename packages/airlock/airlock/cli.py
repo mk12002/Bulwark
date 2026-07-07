@@ -4,18 +4,19 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
 import typer
+from bulwark_core.findings import ScanResult
+from bulwark_core.severity import parse_severity
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 from airlock import __version__
-from airlock.core.findings import ScanResult
-from airlock.core.rules import RuleEngine, RuleLoadError, load_rules
-from airlock.core.severity import parse_severity
+from airlock.rules import RuleEngine, RuleLoadError, load_rules
 
 app = typer.Typer(
     name="airlock",
@@ -40,7 +41,7 @@ def _load_engine() -> RuleEngine:
 
 
 def _emit(result: ScanResult, fmt: str, *, quiet: bool = False) -> None:
-    from airlock.core.report import render_report
+    from bulwark_core.report import render_report
 
     try:
         output = render_report(result, fmt, quiet=quiet)
@@ -70,7 +71,8 @@ def _enrich(
     """Apply optional AI enrichment when requested; degrade gracefully otherwise."""
     if not ai_flag:
         return result
-    from airlock.ai.enrich import run_enrichment
+    from bulwark_core.ai.enrich import run_enrichment
+
     from airlock.config import load_settings
 
     settings = load_settings()
@@ -103,8 +105,9 @@ def _read_model_card(target: str) -> str | None:
 
 def _postprocess(result: ScanResult, baseline: Path | None) -> ScanResult:
     """Apply configured waivers, then an optional baseline diff."""
+    from bulwark_core.postprocess import apply_baseline, apply_waivers
+
     from airlock.config import load_settings
-    from airlock.core.postprocess import apply_baseline, apply_waivers
 
     settings = load_settings()
     result = apply_waivers(result, settings.suppress_rules, settings.suppress_paths)
@@ -298,11 +301,14 @@ def rules_update(
     source: str = typer.Option(..., "--from", help="Directory, .zip path, or https URL of packs."),
 ) -> None:
     """Install validated community rule packs into the user rules directory."""
-    from airlock.core.rule_feed import update_rules
+    from bulwark_core.rule_feed import update_rules
+
+    from airlock.rules import user_rules_dir
 
     console = Console()
+    known = {lr.rule.id for lr in _load_engine().rules}
     try:
-        result = update_rules(source)
+        result = update_rules(source, dest=user_rules_dir(), known_ids=known)
     except RuleLoadError as exc:
         _err.print(f"[bold red]{exc}[/bold red]")
         raise typer.Exit(code=1) from exc
@@ -313,7 +319,7 @@ def rules_update(
     console.print(f"[dim]{len(result.installed)} pack(s) installed to {result.dest}[/dim]")
 
 
-def _study_scanner(engine: RuleEngine) -> object:
+def _study_scanner(engine: RuleEngine) -> Callable[[str, str], ScanResult]:
     from airlock.scanners.mcp import MCPScanner
     from airlock.scanners.model import ModelScanner
     from airlock.scanners.toolspec import load_toolspec
@@ -338,7 +344,7 @@ def study(
     out: Optional[Path] = typer.Option(None, "--out", help="Write the report here."),  # noqa: UP045
 ) -> None:
     """Scan a corpus of targets and produce aggregate, reproducible statistics."""
-    from airlock.core.study import CorpusItem, render_markdown, run_study
+    from bulwark_core.study import CorpusItem, render_markdown, run_study
 
     if not corpus.exists():
         _err.print(f"[bold red]corpus file not found: {corpus}[/bold red]")
@@ -354,7 +360,7 @@ def study(
             items.append(CorpusItem(kind=kind.strip(), target=target.strip()))
 
     engine = _load_engine()
-    report = run_study(items, _study_scanner(engine), rule_count=len(engine.rules))  # type: ignore[arg-type]
+    report = run_study(items, _study_scanner(engine), rule_count=len(engine.rules))
 
     if fmt == "json":
         import dataclasses

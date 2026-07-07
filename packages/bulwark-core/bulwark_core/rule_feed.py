@@ -15,12 +15,10 @@ import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from airlock.core.rules import (
+from bulwark_core.rules import (
     LoadedRule,
     RuleLoadError,
     load_rule_pack,
-    load_rules,
-    user_rules_dir,
 )
 
 
@@ -31,13 +29,6 @@ class UpdateResult:
     installed: list[str] = field(default_factory=list)  # pack filenames installed
     skipped: list[str] = field(default_factory=list)  # (name: reason) for rejects
     dest: Path | None = None
-
-
-def _existing_ids() -> set[str]:
-    try:
-        return {lr.rule.id for lr in load_rules()}
-    except RuleLoadError:
-        return set()
 
 
 def _validate_pack(path: Path, known: set[str]) -> tuple[list[LoadedRule], str | None]:
@@ -88,12 +79,16 @@ def _extract_zip(data: bytes) -> str:
     return dest
 
 
-def update_rules(source: str, dest: Path | None = None) -> UpdateResult:
-    """Validate and install ``*.yaml`` rule packs from ``source`` into ``dest``."""
-    target = dest or user_rules_dir()
+def update_rules(source: str, dest: Path, known_ids: set[str] | None = None) -> UpdateResult:
+    """Validate and install ``*.yaml`` rule packs from ``source`` into ``dest``.
+
+    ``known_ids`` are the rule ids already loaded by the calling tool; any pack
+    that would collide with them (or with an earlier-installed pack) is skipped.
+    """
+    target = dest
     target.mkdir(parents=True, exist_ok=True)
     result = UpdateResult(dest=target)
-    known = _existing_ids()
+    known = set(known_ids or set())
 
     source_dir, _is_temp = _collect_source_packs(source)
     for path in sorted(source_dir.rglob("*.yaml")):

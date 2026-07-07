@@ -6,7 +6,7 @@ presence of ``REDUCE``/``NEWOBJ`` construction opcodes, and collect embedded
 strings. Handles raw pickle files (streamed, never fully loaded) and zip-wrapped
 archives (PyTorch ``.pt``/``.bin``/``.ckpt`` are zips containing ``data.pkl``).
 
-Hardening: opcode counts and member sizes are capped (see :mod:`airlock.core.limits`)
+Hardening: opcode counts and member sizes are capped (see :mod:`bulwark_core.limits`)
 so a hostile stream cannot hang or OOM the scanner. Base64-encoded nested pickles
 are decoded one level deep to catch staged payloads.
 """
@@ -22,8 +22,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import BinaryIO
 
-from airlock.core.limits import DEFAULT_LIMITS, Limits
-from airlock.core.signals import SignalBundle
+from bulwark_core.limits import DEFAULT_LIMITS, Limits
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.model.loader import ArtifactFile
 
 _ZIP_MAGIC = b"PK\x03\x04"

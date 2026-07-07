@@ -6,7 +6,8 @@ is flagged for lacking a safe alternative, and surfaces the full format inventor
 
 from __future__ import annotations
 
-from airlock.core.signals import SignalBundle
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.model.loader import ModelInventory
 
 _GGUF_MAGIC = b"GGUF"
