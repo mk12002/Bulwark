@@ -31,6 +31,24 @@ rules:
       Treat the artifact as untrusted; inspect resolved callables and prefer safetensors.
     references: ["CWE-502"]
 
+  - id: M3-unexpected-pickle-import
+    category: M3
+    title: "Pickle imports from a module outside the ML allowlist"
+    severity: medium
+    confidence: medium
+    match:
+      signal: pickle.unexpected_module
+      predicate: non_empty
+    rationale: >-
+      In allowlist (strict) mode, any callable a pickle imports from a module outside
+      the expected ML set (torch, numpy, collections, …) is surfaced. This catches
+      novel or obfuscated malicious imports a denylist has never seen — the inverse of
+      only blocking known-bad names.
+    remediation: >-
+      Review each unexpected import. A benign tensor pickle should only reference
+      torch/numpy/collections; anything else warrants scrutiny before loading.
+    references: ["CWE-502", "OWASP:LLM05"]
+
   - id: M4-pickle-without-safetensors
     category: M4
     title: "Model ships as pickle with no safetensors alternative"

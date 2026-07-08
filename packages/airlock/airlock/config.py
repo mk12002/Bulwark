@@ -28,6 +28,8 @@ class AirlockSettings(BaseSettings):
 
     fail_on: Severity = Severity.HIGH
     output_format: str = "terminal"
+    # Fickling-style allowlist: flag pickle imports outside the ML module allowlist.
+    strict_allowlist: bool = False
     ai: AIConfig = Field(default_factory=AIConfig)
     # Waivers: findings whose id or location.path match a glob are suppressed.
     suppress_rules: list[str] = Field(default_factory=list)

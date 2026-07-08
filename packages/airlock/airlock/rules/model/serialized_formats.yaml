@@ -76,3 +76,21 @@ rules:
     remediation: >-
       Review why the graph performs filesystem I/O; prefer graphs without host I/O ops.
     references: ["CWE-73"]
+
+  - id: M6-format-extension-mismatch
+    category: M6
+    title: "File content does not match its extension (format spoofing)"
+    severity: high
+    confidence: high
+    match:
+      signal: model.format_mismatch
+      predicate: non_empty
+    rationale: >-
+      A file whose extension implies a safe/non-pickle format but whose bytes are a
+      pickle stream is a scanner-evasion technique: an extension-based classifier skips
+      the pickle scan, shipping the payload undetected (e.g. the picklescan CVE-2025-10155
+      bypass class). Airlock disassembles by content, so the hidden pickle is scanned anyway.
+    remediation: >-
+      Reject the file. A model weight file must match its declared format; a pickle
+      masquerading as safetensors/GGUF/etc. is almost always malicious.
+    references: ["OWASP:LLM05", "CWE-646", "CWE-502"]

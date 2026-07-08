@@ -124,14 +124,27 @@ Detection lives in **YAML rule packs**, not hardcoded — the community can exte
 **off by default**, capped, keys-from-env-only, and never overrides a deterministic finding. See
 **[BULWARK.md](BULWARK.md)** for the full design and the shared-core contract.
 
+## Documentation
+
+- **[docs/USAGE.md](docs/USAGE.md)** — the practical end-to-end guide: install, every command, output
+  formats, CI, config, and how the tools compose.
+- **[docs/LANDSCAPE.md](docs/LANDSCAPE.md)** — competitive & research landscape: existing tools,
+  platforms, and academic work, and where Bulwark fits.
+- **[docs/EMPIRICAL_VALIDATION.md](docs/EMPIRICAL_VALIDATION.md)** — corpus study, adversarial suite,
+  and the picklescan benchmark.
+- **[docs/DATASETS_AND_TESTING.md](docs/DATASETS_AND_TESTING.md)** — full reference for the external
+  datasets (19-model corpus, adversarial corpus, config samples) and every test run on them.
+- **[BULWARK.md](BULWARK.md)** + `docs/PROJECT_REFERENCE_*.md` — design contract and per-tool deep dives.
+
 ## Why it's credible
 
 - **Standards-based** — CycloneDX ML-BOM + SPDX, SARIF for code scanning, OWASP LLM Top 10 / MITRE
   ATLAS / CWE / NIST AI RMF / EU AI Act references throughout.
 - **Measured, not asserted** — validated on **19 real public HuggingFace models** (100% had a
-  supply-chain finding; 95% ship pickle weights), a **13-payload adversarial suite** Airlock catches
-  **13/13**, and a head-to-head **benchmark vs. picklescan** (13/13 vs 9/13 on evasive payloads; both
-  0/18 false alarms on benign models). Full methodology + reproduction:
+  supply-chain finding; 95% ship pickle weights), a **14-payload adversarial suite** Airlock catches
+  **14/14**, and a head-to-head **benchmark vs. picklescan** (14/14 vs 10/14 on evasive payloads; both
+  0/18 false alarms on benign models). Detectors target the 2025 bypass wave directly — format/extension
+  confusion (CVE-2025-10155 class) and a Fickling-style import allowlist. Full methodology:
   [`docs/EMPIRICAL_VALIDATION.md`](docs/EMPIRICAL_VALIDATION.md).
 - **Reproducible research angle** — each tool ships a corpus/study harness for an empirical measurement
   of AI-supply-chain hygiene ("we scanned N public artifacts and X% were vulnerable").
@@ -140,7 +153,7 @@ Detection lives in **YAML rule packs**, not hardcoded — the community can exte
 
 ## Roadmap
 
-1. ✅ **Airlock** — models · MCP · tool-specs, 40 rules, hardened parsers, SARIF/CI, optional AI.
+1. ✅ **Airlock** — models · MCP · tool-specs, 42 rules, hardened + anti-evasion parsers, SARIF/CI, optional AI.
 2. ✅ **`bulwark-core`** extracted; **Warden** — least-privilege audit, capability graph, agency score, framework importers, `--scan-parts`, policy profiles.
 3. ✅ **Manifest** — CycloneDX + SPDX AI-BOM, OSV vulns, B1–B9, Airlock/Warden bridges, NIST AI RMF + EU AI Act, BOM diff.
 4. ✅ **`bulwark` meta-CLI** + empirical validation (real-model corpus study, adversarial suite, picklescan benchmark) + matrixed CI.

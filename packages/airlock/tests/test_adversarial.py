@@ -58,6 +58,7 @@ def test_generator_produces_a_spread(corpus: list[tuple[str, Path]]) -> None:
         "base64_nested",
         "npy_object",
         "torch_zip",
+        "disguised_safetensors",
     } <= names
 
 
@@ -77,3 +78,63 @@ def test_stack_global_has_no_classic_global_string(corpus: list[tuple[str, Path]
     assert b"c os\nsystem" not in path.read_bytes()
     engine = RuleEngine(load_rules())
     assert "M1" in _scan_one(engine, "stack_global", path)
+
+
+def test_pickle_disguised_as_safetensors_trips_mismatch(corpus: list[tuple[str, Path]]) -> None:
+    # Extension spoofing (CVE-2025-10155 class): a pickle named .safetensors must be
+    # flagged for the deception (M6) AND scanned as a pickle (M1).
+    path = next(p for n, p in corpus if n == "disguised_safetensors")
+    engine = RuleEngine(load_rules())
+    result = ModelScanner(engine).scan(str(path.parent))
+    ids = {f.id for f in result.findings}
+    cats = {f.category for f in result.findings}
+    assert "M6-format-extension-mismatch" in ids
+    assert "M1" in cats
+
+
+class _NovelImport:
+    """Imports from a module a denylist may not know — caught only by the allowlist."""
+
+    def __reduce__(self):  # type: ignore[no-untyped-def]
+        import socket
+
+        return (socket.gethostname, ())
+
+
+def test_allowlist_mode_flags_unexpected_module(tmp_path: Path) -> None:
+    import pickle
+
+    (tmp_path / "m.bin").write_bytes(pickle.dumps(_NovelImport(), protocol=4))
+    engine = RuleEngine(load_rules())
+
+    default = ModelScanner(engine).scan(str(tmp_path))
+    strict = ModelScanner(engine, strict=True).scan(str(tmp_path))
+
+    # Default (non-strict) mode does not raise the allowlist finding...
+    assert not any(f.id == "M3-unexpected-pickle-import" for f in default.findings)
+    # ...but strict mode surfaces the unexpected import.
+    assert any(f.id == "M3-unexpected-pickle-import" for f in strict.findings)
+
+
+def test_allowlist_mode_no_false_positive_on_torch_imports(tmp_path: Path) -> None:
+    # A pickle importing only collections.OrderedDict (allowlisted) must stay clean.
+    import pickle
+
+    (tmp_path / "m.bin").write_bytes(pickle.dumps({"a": 1}, protocol=4))
+    engine = RuleEngine(load_rules())
+    strict = ModelScanner(engine, strict=True).scan(str(tmp_path))
+    assert not any(f.id == "M3-unexpected-pickle-import" for f in strict.findings)
+
+
+def test_real_safetensors_is_not_flagged_as_mismatch(tmp_path: Path) -> None:
+    # A genuine safetensors file (8-byte LE header length + JSON header) must NOT
+    # trip the format-confusion detector — no false positives.
+    import json
+    import struct
+
+    header = json.dumps({"__metadata__": {"format": "pt"}}).encode()
+    blob = struct.pack("<Q", len(header)) + header + b"\x00" * 32
+    (tmp_path / "weights.safetensors").write_bytes(blob)
+    engine = RuleEngine(load_rules())
+    result = ModelScanner(engine).scan(str(tmp_path))
+    assert not any(f.id == "M6-format-extension-mismatch" for f in result.findings)

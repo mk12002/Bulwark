@@ -147,13 +147,20 @@ def scan_model(
     baseline: Optional[Path] = typer.Option(  # noqa: UP045
         None, "--baseline", help="Report only findings absent from this prior JSON result."
     ),
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Allowlist mode: flag pickle imports outside the ML module allowlist.",
+    ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Compact one-line-per-finding output."),
 ) -> None:
     """Scan an ML model artifact for supply-chain risks (M1–M7)."""
+    from airlock.config import load_settings
     from airlock.scanners.model import ModelScanner
 
     engine = _load_engine()
-    scanner = ModelScanner(engine)
+    strict_mode = strict or load_settings().strict_allowlist
+    scanner = ModelScanner(engine, strict=strict_mode)
     result = scanner.scan(target)
     result = _enrich(result, ai_flag=ai, model_card=_read_model_card(target))
     result = _postprocess(result, baseline)

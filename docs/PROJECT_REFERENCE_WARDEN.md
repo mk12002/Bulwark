@@ -107,6 +107,24 @@ and merge. **Ref:** OWASP LLM05.
 **A10 — No runaway guards.** *(MEDIUM)* Autonomous/looping agent with no iteration cap, budget, or
 timeout. **Detect:** missing limits in `analysis/limits.py`. **Ref:** OWASP LLM06.
 
+### 3.1 Mapping to the OWASP Top 10 for Agentic Applications (2026)
+
+Warden's A-codes predate but align cleanly with the emerging **OWASP Top 10 for Agents (2026)**, which
+elevates agent-specific risks beyond the LLM Top 10:
+
+| Warden | Agentic-Top-10 theme |
+| --- | --- |
+| A1, A7 | Excessive permissions / excessive functionality |
+| A2, A5 | Tool misuse & unexpected data flows (toxic combinations) |
+| A3 | Insufficient human-in-the-loop / oversight |
+| A4 | Agent instruction / goal manipulation surface |
+| A6 | Identity & secret management |
+| A8 | Unsafe code/tool execution |
+| A9 | Supply-chain of tools & components |
+| A10 | Insufficient guardrails / autonomy limits |
+
+This is advisory alignment (the framework is still stabilizing), not a conformance claim.
+
 ---
 
 ## 4. AgentSpec IR (Warden-specific data model)

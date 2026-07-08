@@ -21,7 +21,7 @@ airlock scan model    ./path/to/model            # or hf:org/name  (pickle, safe
 airlock scan mcp      "python server.py"         # stdio command, or an sse/http URL
 airlock scan toolspec tools.json                 # OpenAI / Anthropic / Bedrock / LangChain tool definitions
 airlock study         corpus.txt                 # scan many targets → aggregate stats
-airlock rules list                               # 40 rules; `rules update --from <feed>` to extend
+airlock rules list                               # 42 rules; `rules update --from <feed>` to extend
 ```
 
 ## Why
@@ -109,12 +109,21 @@ airlock scan model hf:org/name --format sarif --fail-on high > airlock.sarif
   rule-id or path glob in `airlock.toml` (`suppress_rules` / `suppress_paths`). Suppressed counts are
   still reported for transparency.
 
-### Hardening
+### Hardening & anti-evasion
 
 Airlock ingests hostile artifacts, so it defends itself: archive inspection caps member count and
 flags **decompression bombs** (extreme size/ratio), pickle disassembly is **opcode-capped and
 streamed** (never loading a multi-GB file into memory), and base64-encoded **nested pickles** are
 decoded one level deep to catch staged payloads. All limits are tunable via `AIRLOCK_LIMIT_*`.
+
+Two detectors target the 2025 scanner-bypass wave head-on:
+
+- **Format/extension confusion (M6)** — Airlock sniffs magic bytes, so a pickle renamed
+  `model.safetensors` to dodge an extension-based classifier (the picklescan **CVE-2025-10155** bypass
+  class) is flagged *and* disassembled anyway. Zero false positives on genuine safe-format files.
+- **Allowlist mode (`--strict`, M3)** — Fickling-style: instead of only blocking known-bad imports, it
+  surfaces any pickle import from a module *outside* the ML allowlist (torch/numpy/collections/…),
+  catching novel callables a denylist has never seen.
 
 ### Proven, not just claimed
 
@@ -123,10 +132,10 @@ Airlock is validated on real data and against a real competitor — see
 
 - **Corpus study** over **19 public HuggingFace models** — 100% had a supply-chain finding, 95% ship
   pickle weights, 89% contain a `REDUCE` opcode. (`python scripts/build_corpus.py` then `airlock study`.)
-- **Adversarial suite** — 13 evasive-but-benign payloads (protocols 0–5, `STACK_GLOBAL`, gzip/zlib,
-  base64-staged, `.npy`, torch-zip). Airlock's static analysis flags **13/13**; locked in by
-  `tests/test_adversarial.py`.
-- **Benchmark vs. picklescan** (`scripts/benchmark.py`) — **13/13 vs 9/13** on evasive payloads (Airlock
+- **Adversarial suite** — 14 evasive-but-benign payloads (protocols 0–5, `STACK_GLOBAL`, gzip/zlib,
+  base64-staged, `.npy`, torch-zip, format-spoofed `.safetensors`). Airlock flags **14/14**; locked in
+  by `tests/test_adversarial.py`.
+- **Benchmark vs. picklescan** (`scripts/benchmark.py`) — **14/14 vs 10/14** on evasive payloads (Airlock
   also decompresses + decodes one level), and **0/18 vs 0/18** false code-exec alarms on benign models.
 
 ### Corpus study & AI evaluation

@@ -273,6 +273,15 @@ loudly at load time (surfaced by `airlock rules lint`).
 - **pickle_scan.py** — for each pickle-family file, run `pickletools.genops` (does **not** execute
   the pickle), collect the sequence of opcodes and the fully-qualified callables referenced by
   `GLOBAL`/`STACK_GLOBAL`. Emit signals: `pickle.opcodes`, `pickle.imports`, `pickle.has_reduce`.
+  In **allowlist mode** (`--strict` / `strict_allowlist`), any import whose top-level module is outside
+  the ML allowlist (`torch`/`numpy`/`collections`/…) emits `pickle.unexpected_module` → **M3**. This is
+  the Fickling-style inverse of denylisting: it catches novel callables a denylist has never seen. Off
+  by default (real HF weights import only from `torch`/`collections`, so it is noise-free but opt-in).
+- **confusion.py** — **format/extension-confusion (M6).** Sniffs magic bytes and flags any file whose
+  bytes are a pickle stream but whose extension claims a safe/non-pickle format (`.safetensors`,
+  `.gguf`, …) — the scanner-evasion class behind picklescan **CVE-2025-10155**. Emits
+  `model.format_mismatch` *and* re-runs the pickle disassembler on the file so a dangerous hidden
+  payload still trips M1/M2. Content-sniffing keeps false positives at zero on genuine safe-format files.
 - **serialized.py** — classify each weight file and emit `model.formats`; if pickle present and
   safetensors absent → M4 advisory. For TensorFlow SavedModel (`.pb`), statically scan for dangerous
   op markers — `PyFunc`/`PyFuncStateless`/`EagerPyFunc` → `model.tf_custom_op` (M5, HIGH) and

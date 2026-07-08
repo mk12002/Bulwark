@@ -33,3 +33,6 @@ Thumbs.db
 
 # Downloaded real-world test data (not committed)
 datasets/
+
+# Draft blog posts / marketing content (not committed)
+blogs/

@@ -8,12 +8,14 @@ scanner never deserializes or imports the artifact.
 from __future__ import annotations
 
 from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.rules import RuleEngine
 from bulwark_core.scanner import Scanner
 from bulwark_core.severity import Severity
 from bulwark_core.signals import SignalBundle
 
 from airlock.scanners.model import (
     archive,
+    confusion,
     formats,
     pickle_scan,
     provenance,
@@ -31,10 +33,17 @@ class ModelScanner(Scanner):
     tool = "airlock"
     target_type = "model"
 
+    def __init__(self, engine: RuleEngine, *, strict: bool = False) -> None:
+        super().__init__(engine)
+        # strict = Fickling-style allowlist mode: flag pickle imports whose module
+        # is outside the ML allowlist (opt-in; off by default to avoid noise).
+        self.strict = strict
+
     def collect_signals(self, target: str) -> SignalBundle:
         bundle = SignalBundle(target="model")
         inventory = resolve(target)
-        pickle_scan.collect(inventory.files, bundle)
+        pickle_scan.collect(inventory.files, bundle, strict=self.strict)
+        confusion.collect(inventory.files, bundle, strict=self.strict)
         serialized.collect(inventory.files, bundle)
         formats.collect(inventory, bundle)
         remote_code.collect(inventory, bundle)

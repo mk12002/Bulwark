@@ -5,10 +5,12 @@ public models, an **adversarial robustness suite** of evasive-but-benign payload
 head-to-head **benchmark against picklescan**. This document summarizes the results and how to
 regenerate them.
 
-> The model corpus lives under `datasets/` (gitignored, ~150 MB). Rebuild it with
+> The model corpus lives under `datasets/` (gitignored, ~324 MB). Rebuild it with
 > `python packages/airlock/scripts/build_corpus.py`. The generated result tables are committed at
 > [`packages/airlock/docs/CORPUS_STUDY.md`](../packages/airlock/docs/CORPUS_STUDY.md) and
-> [`packages/airlock/docs/BENCHMARK.md`](../packages/airlock/docs/BENCHMARK.md).
+> [`packages/airlock/docs/BENCHMARK.md`](../packages/airlock/docs/BENCHMARK.md). For the complete
+> dataset inventory, provenance, and per-test methodology, see
+> [`DATASETS_AND_TESTING.md`](DATASETS_AND_TESTING.md).
 
 ## 1. Corpus study — real public models
 
@@ -33,7 +35,7 @@ exists to make visible. Reproduce with `airlock study datasets/corpus.txt --form
 
 ## 2. Adversarial robustness — does static analysis survive obfuscation?
 
-`scripts/adversarial.py` generates **13 evasive-but-benign** pickle artifacts (each references
+`scripts/adversarial.py` generates **14 evasive-but-benign** pickle artifacts (each references
 `os.system` but only `echo`s an inert marker; nothing is ever unpickled). They probe whether the
 scanner can be evaded by:
 
@@ -42,9 +44,12 @@ scanner can be evaded by:
 - **gzip/zlib-compressed** pickles wearing a `.bin` model extension,
 - a **base64-staged** nested pickle,
 - an object-dtype **`.npy`** hiding a pickle,
-- a **torch-style zip** (pickle as an inner archive member).
+- a **torch-style zip** (pickle as an inner archive member),
+- **format spoofing** — a pickle renamed `model.safetensors` to dodge an extension-based classifier
+  (the picklescan **CVE-2025-10155** bypass class).
 
-**Result: Airlock flags code execution (M1) on 13/13.** Locked in by
+**Result: Airlock flags code execution (M1) on 14/14**, and additionally raises a dedicated
+format-spoofing finding (**M6**) on the disguised file. Locked in by
 [`tests/test_adversarial.py`](../packages/airlock/tests/test_adversarial.py), which fails if any
 obfuscation slips a payload past the scanner.
 
@@ -54,18 +59,34 @@ Both tools were asked the same question on every pickle artifact — *do you fla
 
 | Group | Airlock | picklescan |
 | --- | :---: | :---: |
-| **Adversarial** (13 evasive payloads) | **13/13** | 9/13 |
+| **Adversarial** (14 evasive payloads) | **14/14** | 10/14 |
 | **Real models** (18 benign `.bin`) | 0/18 | 0/18 |
 
-Two takeaways:
+Three takeaways:
 
-- **On evasive payloads Airlock catches 4 more** than picklescan — the **gzip/zlib-compressed** and
-  **base64-staged** variants — because it decompresses and decodes one level before disassembling.
+- **On evasive payloads Airlock catches more** than picklescan — the **gzip/zlib-compressed** and
+  **base64-staged** variants (and it handles the `.npy` object array picklescan's file-path entry
+  skips) — because it decompresses and decodes one level before disassembling.
+- **On the format-spoofing file both flag code execution** (a current picklescan sniffs content), but
+  only Airlock emits the explicit **M6 format-mismatch** finding that names the deception.
 - **On real benign models both agree: no code-execution false alarms.** Airlock still reports the
   pickle *surface* risk (M2) and the missing-safetensors/provenance advisories (M4/M7) — a risk
   posture, not a cry of "malware" — which is the correct, non-noisy behavior.
 
 Reproduce with `python packages/airlock/scripts/benchmark.py datasets/corpus.txt`.
+
+## 4. Research-driven detectors
+
+Two Airlock detectors are directly informed by the 2025 threat landscape (see
+[`LANDSCAPE.md`](LANDSCAPE.md)):
+
+- **Format/extension-confusion (M6)** — sniffs magic bytes and flags any file whose bytes are a pickle
+  but whose extension claims a safe format, defeating the extension-rename bypass class
+  (CVE-2025-10155) *and* scanning the hidden pickle so a dangerous payload still trips M1/M2.
+- **Allowlist mode (M3, opt-in `--strict`)** — Fickling-style: instead of only blocking known-dangerous
+  imports, it surfaces any pickle import from a module *outside* the ML allowlist (torch/numpy/…),
+  catching novel callables a denylist has never seen. Verified to produce **zero false positives** on
+  the 19-model corpus (real weights import only from `torch`/`collections`).
 
 ## Honesty notes
 

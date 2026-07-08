@@ -30,11 +30,13 @@ PICKLE_SUFFIXES = {".pkl", ".bin", ".pt", ".pth", ".ckpt", ".npy"}
 
 
 def airlock_flags_exec(engine: RuleEngine, path: Path) -> bool:
-    """True if Airlock reports M1 (code execution) for the artifact at ``path``."""
-    sub = path.parent / f"_al_{path.stem}"
-    sub.mkdir(exist_ok=True)
-    (sub / path.name).write_bytes(path.read_bytes())
-    result = ModelScanner(engine).scan(str(sub))
+    """True if Airlock reports M1 (code execution) for the artifact at ``path``.
+
+    Scans the file in place — the loader accepts a single file — so the benchmark
+    never writes anything into the corpus (an earlier version copied files into each
+    model directory and silently inflated repeated runs).
+    """
+    result = ModelScanner(engine).scan(str(path))
     return any(f.category == "M1" for f in result.findings)
 
 
@@ -65,6 +67,9 @@ def _iter_corpus_pickles(manifest: Path) -> list[tuple[str, Path]]:
         if not d.exists():
             continue
         for f in sorted(d.rglob("*")):
+            # Skip the HuggingFace download cache; scan only real artifact files.
+            if ".cache" in f.parts:
+                continue
             if f.is_file() and f.suffix.lower() in PICKLE_SUFFIXES:
                 out.append((f"{d.name}/{f.name}", f))
     return out

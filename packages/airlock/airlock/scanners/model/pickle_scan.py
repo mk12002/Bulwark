@@ -45,6 +45,43 @@ _REDUCE_OPCODES = {"REDUCE", "NEWOBJ", "NEWOBJ_EX", "OBJ", "BUILD"}
 
 _B64_RE = re.compile(r"^[A-Za-z0-9+/]{16,}={0,2}$")
 
+# Fickling-style allowlist (opt-in "strict" mode): the top-level modules a benign
+# ML pickle is expected to import from. Anything outside this set is surfaced as an
+# *unexpected* import — this catches novel malicious callables a denylist has never
+# seen, rather than only known-dangerous names. Empirically, real HuggingFace pickle
+# weights import only from a tiny set (torch, collections, numpy, builtins).
+SAFE_PICKLE_MODULES = frozenset(
+    {
+        "torch",
+        "collections",
+        "numpy",
+        "__builtin__",
+        "builtins",
+        "copyreg",
+        "copy_reg",
+        "_codecs",
+        "encodings",
+        "functools",
+        "datetime",
+        "decimal",
+        "dataclasses",
+        "typing",
+        "argparse",
+        "pandas",
+        "sklearn",
+        "scipy",
+        "joblib",
+        "transformers",
+        "tokenizers",
+        "sentencepiece",
+        "PIL",
+    }
+)
+
+
+def _top_module(callable_name: str) -> str:
+    return callable_name.split(".", 1)[0]
+
 
 @dataclass
 class PickleAnalysis:
@@ -233,8 +270,58 @@ def _member_label(relpath: str, member: str) -> str:
     return f"{relpath}::{member}" if member else relpath
 
 
+def emit_analyses(
+    relpath: str,
+    analyses: dict[str, PickleAnalysis],
+    bundle: SignalBundle,
+    *,
+    strict: bool = False,
+) -> None:
+    """Emit pickle signals for one file's disassembly result(s).
+
+    Shared by the pickle collector and the format-confusion analyzer, so a pickle
+    hidden under a non-pickle extension still produces full M1/M2 findings. When
+    ``strict`` is set, also emit ``pickle.unexpected_module`` for imports whose
+    top-level module is outside the ML allowlist (Fickling-style).
+    """
+    for member, analysis in analyses.items():
+        label = _member_label(relpath, member)
+        if analysis.has_reduce:
+            bundle.add("pickle.has_reduce", True, path=label)
+        for callable_name, pos in analysis.imports:
+            bundle.add(
+                "pickle.imports",
+                callable_name,
+                path=label,
+                detail=f"opcode@{pos}" if pos >= 0 else None,
+                evidence=callable_name,
+            )
+            if strict and _top_module(callable_name) not in SAFE_PICKLE_MODULES:
+                bundle.add(
+                    "pickle.unexpected_module",
+                    callable_name,
+                    path=label,
+                    detail=_top_module(callable_name),
+                    evidence=f"{callable_name} (module not on the ML allowlist)",
+                )
+        for nested in analysis.nested_imports:
+            bundle.add(
+                "pickle.imports",
+                nested,
+                path=label,
+                detail="nested-base64",
+                evidence=f"{nested} (in a base64-encoded nested pickle)",
+            )
+        for s in analysis.strings:
+            bundle.add("pickle.strings", s, path=label, evidence=_safe(s))
+
+
 def collect(
-    files: list[ArtifactFile], bundle: SignalBundle, limits: Limits = DEFAULT_LIMITS
+    files: list[ArtifactFile],
+    bundle: SignalBundle,
+    limits: Limits = DEFAULT_LIMITS,
+    *,
+    strict: bool = False,
 ) -> None:
     """Emit pickle signals for every pickle-family file into the bundle."""
     for file in files:
@@ -242,28 +329,7 @@ def collect(
             continue
         bundle.add("model.pickle_file", file.relpath, path=file.relpath)
         analyses = analyze_file(file, limits)
-        for member, analysis in analyses.items():
-            label = _member_label(file.relpath, member)
-            if analysis.has_reduce:
-                bundle.add("pickle.has_reduce", True, path=label)
-            for callable_name, pos in analysis.imports:
-                bundle.add(
-                    "pickle.imports",
-                    callable_name,
-                    path=label,
-                    detail=f"opcode@{pos}" if pos >= 0 else None,
-                    evidence=callable_name,
-                )
-            for nested in analysis.nested_imports:
-                bundle.add(
-                    "pickle.imports",
-                    nested,
-                    path=label,
-                    detail="nested-base64",
-                    evidence=f"{nested} (in a base64-encoded nested pickle)",
-                )
-            for s in analysis.strings:
-                bundle.add("pickle.strings", s, path=label, evidence=_safe(s))
+        emit_analyses(file.relpath, analyses, bundle, strict=strict)
 
 
 def _safe(text: str) -> str:

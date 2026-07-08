@@ -102,6 +102,10 @@ def build_adversarial_corpus(dest: Path) -> list[tuple[str, Path]]:
         zf.writestr("archive/data.pkl", raw)
     write("torch_zip", "model.pt", buf.getvalue())
 
+    # 7. Format spoofing: a pickle renamed to a "safe" extension to dodge an
+    #    extension-based classifier (the picklescan CVE-2025-10155 bypass class).
+    write("disguised_safetensors", "model.safetensors", raw)
+
     return out
 
 
