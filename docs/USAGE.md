@@ -200,15 +200,18 @@ Airlock + Warden, and emits a standards-based AI-BOM plus governance.
 
 ```bash
 manifest scan ./project                                  # terminal summary
-manifest scan ./project --format cyclonedx > bom.json    # CycloneDX 1.5 ML-BOM
+manifest scan ./project --format cyclonedx > bom.json    # CycloneDX 1.5 ML-BOM (agent components incl.)
 manifest scan ./project --format spdx > bom.spdx.json    # SPDX 2.3
+manifest scan ./project --format vex > vex.json          # CycloneDX VEX (detected vulns, exploitable)
 manifest scan ./project --scan-risk                      # fold in Airlock/Warden findings (B5)
 manifest scan ./project --scan-risk --govern             # + NIST AI RMF + EU AI Act + risk register
 manifest scan ./project --format md --govern             # human governance report
 manifest scan ./project --online                         # use the live OSV API (default is offline seed)
 ```
 
-Discovers: models · datasets · MCP servers · prompts · tools · dependencies · **notebooks** (`.ipynb`).
+Discovers: models · datasets · MCP servers · prompts · tools · dependencies · **notebooks** (`.ipynb`) ·
+**agents** (agent-manifest / OpenAI-Assistants / CrewAI configs → `agent` components with autonomy +
+wired tools).
 Finds **B1–B9**: unpinned/undeclared, missing provenance, license risk, OSV-known vulns, ⭐ high-risk
 component (imported from Airlock/Warden), dataset gaps, secret exposure, untracked prompts, control
 gaps.
@@ -232,7 +235,7 @@ Every scanner shares the same renderers:
 | `json` | the full `ScanResult` (+ AgentSpec / AIBOM in meta) |
 | `html` | a shareable report |
 | `sarif` | GitHub/GitLab code scanning |
-| `cyclonedx` / `spdx` / `md` | Manifest only — BOMs + governance |
+| `cyclonedx` / `spdx` / `vex` / `md` | Manifest only — BOMs, VEX, + governance |
 
 **Gate a build** with `--fail-on`: exit is non-zero when any finding is at or above the threshold.
 

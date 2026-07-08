@@ -46,6 +46,11 @@ def _emit(result: ScanResult, fmt: str) -> None:
 
         typer.echo(render_spdx(AIBOM.model_validate(result.meta["aibom"])))
         return
+    if fmt == "vex":
+        from manifest.bom.vex import render_vex
+
+        typer.echo(render_vex(result))
+        return
     if fmt in ("md", "markdown"):
         from manifest.bom.model import AIBOM
         from manifest.govern import render_governance_md
@@ -77,7 +82,7 @@ def _finish(result: ScanResult, fail_on: str) -> None:
 def scan(
     project: Path = typer.Argument(..., help="Path to an AI project directory."),
     fmt: str = typer.Option(
-        "terminal", "--format", "-f", help="terminal|cyclonedx|spdx|json|html|sarif|md"
+        "terminal", "--format", "-f", help="terminal|cyclonedx|spdx|vex|json|html|sarif|md"
     ),
     fail_on: str = typer.Option("high", "--fail-on", help="Exit non-zero at/above this severity."),
     scan_risk: bool = typer.Option(

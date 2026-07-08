@@ -60,6 +60,19 @@ def _properties(component: Component) -> list[dict]:
         props.append({"name": "bulwark:source", "value": component.provenance.source})
     props.append({"name": "bulwark:pinned", "value": str(component.provenance.pinned).lower()})
     props.append({"name": "bulwark:license-risk", "value": component.license.risk})
+    # Agent components carry assembly detail (aligned with the emerging CycloneDX Agent BOM):
+    # autonomy, model, and the tools wired in — so a BOM reflects assemblies, not just parts.
+    if component.type is ComponentType.AGENT:
+        meta = component.metadata
+        if meta.get("framework"):
+            props.append({"name": "bulwark:agent:framework", "value": str(meta["framework"])})
+        if meta.get("autonomy"):
+            props.append({"name": "bulwark:agent:autonomy", "value": str(meta["autonomy"])})
+        if meta.get("model"):
+            props.append({"name": "bulwark:agent:model", "value": str(meta["model"])})
+        props.append({"name": "bulwark:agent:tool-count", "value": str(meta.get("tool_count", 0))})
+        for tool_name in meta.get("tools", []) or []:
+            props.append({"name": "bulwark:agent:tool", "value": str(tool_name)})
     for fid in component.findings:
         props.append({"name": "bulwark:finding", "value": fid})
     return props

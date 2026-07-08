@@ -1,0 +1,38 @@
+name: 💡 Feature request / new detector
+description: Suggest a capability, a new rule/detector, or an importer.
+labels: ["enhancement", "triage"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of request?
+      options:
+        - New detector / rule (a risk Bulwark should catch)
+        - New importer / format (a config or artifact type it should read)
+        - New output / integration
+        - Other enhancement
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What risk or gap does this address? Link an OWASP/MITRE/CWE reference or a CVE if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should Bulwark do? If it's a detector, what signal and what finding?
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Alignment
+      options:
+        - label: This is detection/reporting oriented (Bulwark is defensive-only, never weaponized).
+          required: true
+        - label: It can be inspected statically (no executing/deserializing the target).
+          required: false

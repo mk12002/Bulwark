@@ -41,9 +41,11 @@ fuzzing** to harden pickle scanners. These are exactly the obfuscation classes A
 loaders; *SafePickle* (arXiv 2602.19818) — ML-based malicious-pickle detection.
 
 **Where Airlock fits:** open-source, same formats as ModelScan **plus** GGUF/Flax/PMML and
-base64-nested/compressed handling; a benign, reproducible **adversarial + benchmark** methodology; and
-— unlike all of the above — it is *one target type of three in a composable suite*. It does **not**
-claim Guardian's scale/battle-testing or runtime protection.
+base64-nested/compressed handling; a benign, reproducible **adversarial + benchmark** methodology that
+runs Airlock head-to-head against **picklescan, modelscan, and fickling** (Airlock is the only one to
+catch all 14 evasive payloads; all four post zero false positives on benign models); and — unlike all of
+the above — it is *one target type of three in a composable suite*. It does **not** claim Guardian's
+scale/battle-testing or runtime protection.
 
 Two Airlock detectors are drawn directly from the 2025 findings above:
 - **Format/extension-confusion (M6)** — sniffs magic bytes and flags a pickle disguised under a safe

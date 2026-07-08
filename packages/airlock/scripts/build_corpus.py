@@ -42,6 +42,17 @@ CANDIDATES: list[str] = [
     "hf-internal-testing/tiny-random-OPTForCausalLM",
     "hf-internal-testing/tiny-random-BloomModel",
     "hf-internal-testing/tiny-random-CLIPModel",
+    # A few small but real, widely-downloaded models to broaden the corpus beyond test repos.
+    "distilbert-base-uncased",
+    "prajjwal1/bert-medium",
+    "prajjwal1/bert-mini",
+    "google/bert_uncased_L-2_H-128_A-2",
+    "hf-internal-testing/tiny-random-ViTModel",
+    "hf-internal-testing/tiny-random-Wav2Vec2Model",
+    "hf-internal-testing/tiny-random-GPTJForCausalLM",
+    "hf-internal-testing/tiny-random-FalconForCausalLM",
+    "hf-internal-testing/tiny-random-PhiForCausalLM",
+    "hf-internal-testing/tiny-random-Qwen2ForCausalLM",
 ]
 
 # Only pull small weight/config/code files — never gigabytes.

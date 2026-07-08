@@ -54,6 +54,10 @@ execute it** — and each emits components:
 - **Notebooks** (`discover/notebooks.py`): parses `.ipynb` cell source and extracts
   `from_pretrained`/`load_dataset` refs and `!pip install` packages → MODEL/DATASET/LIBRARY
   components, with `location` recorded as `path#cellN` so a finding points at the exact cell.
+- **Agents** (`discover/agents.py`): statically detects agent-assembly configs (generic agent manifest,
+  OpenAI Assistants, CrewAI) → `AGENT` components whose metadata captures autonomy, model, and wired
+  tool names. This makes the BOM reflect *assemblies*, not just parts; the CycloneDX emitter surfaces
+  these as `bulwark:agent:*` properties (aligned with the emerging CycloneDX Agent BOM, spec issue #895).
 
 Discoverers are additive and independent; the registry runs all and merges into one AIBOM. Adding a
 component type never touches existing ones.
@@ -177,6 +181,10 @@ sourced (cite the framework), never overclaim compliance.
 - **CycloneDX 1.5 JSON** (`bom/cyclonedx.py`) — primary machine format (interoperable ML-BOM).
 - **SPDX 2.3 JSON** (`bom/spdx.py`, `--format spdx`) — for pipelines standardized on SPDX; sanitized
   `SPDXRef-*` ids, packages, and `DESCRIBES` relationships.
+- **VEX** (`bom/vex.py`, `--format vex`) — a CycloneDX VEX document seeded from the B4 findings: each
+  vulnerable dependency becomes a `vulnerabilities[]` entry with the advisory id/source, a rating, the
+  affected component ref, and an `analysis.state = exploitable` — a reviewer flips any entry to
+  `not_affected` with a justification without re-scanning.
 - **JSON** — the full `ScanResult` + `AIBOM`.
 - **HTML/Markdown** — human BOM with risk badges per component + governance summary.
 - **SARIF** — governance findings for CI (ruleId = B-code; imported M/P/A findings included).

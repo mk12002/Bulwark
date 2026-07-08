@@ -17,6 +17,42 @@ rules:
       human approval between reading sensitive data and any egress.
     references: ["OWASP:LLM06", "OWASP:LLM02"]
 
+  - id: A2-injectable-exfil-flow
+    category: A2
+    title: "Attacker-triggerable exfiltration flow (untrusted input → secret → egress)"
+    severity: critical
+    confidence: medium
+    match:
+      signal: agent.injectable_toxic_flow
+      predicate: non_empty
+    rationale: >-
+      The agent ingests untrusted external content (browse / inbound message) AND can read
+      a crown-jewel source (secret/DB/file) AND has an egress sink. An attacker who plants
+      instructions in the ingested content (indirect prompt injection) can drive the full
+      read-secret-then-exfiltrate chain. This is not a hypothetical pairing — it is a
+      fully attacker-controllable kill chain.
+    remediation: >-
+      Break the chain: isolate untrusted-input tools from crown-jewel sources and egress,
+      require human approval between a sensitive read and any egress, or allow-list egress.
+    references: ["OWASP:LLM01", "OWASP:LLM06", "OWASP:LLM02"]
+
+  - id: A2-injectable-high-impact-action
+    category: A2
+    title: "Attacker-triggerable high-impact action (untrusted input → ungated exec)"
+    severity: high
+    confidence: medium
+    match:
+      signal: agent.injectable_action
+      predicate: non_empty
+    rationale: >-
+      The agent ingests untrusted external content AND exposes an ungated high-impact tool
+      (shell/exec/financial/destructive). Injected instructions can trigger the dangerous
+      action with no human in the loop.
+    remediation: >-
+      Add a human-in-the-loop gate on the high-impact tool, sandbox code/shell execution,
+      or prevent untrusted-input tools from sharing a context with high-impact tools.
+    references: ["OWASP:LLM01", "OWASP:LLM06"]
+
   - id: A5-unrestricted-egress
     category: A5
     title: "Unrestricted egress / exfiltration surface"

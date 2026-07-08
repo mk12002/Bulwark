@@ -53,27 +53,31 @@ format-spoofing finding (**M6**) on the disguised file. Locked in by
 [`tests/test_adversarial.py`](../packages/airlock/tests/test_adversarial.py), which fails if any
 obfuscation slips a payload past the scanner.
 
-## 3. Benchmark vs. picklescan
+## 3. Benchmark vs. picklescan, modelscan, and fickling
 
-Both tools were asked the same question on every pickle artifact — *do you flag code execution?*
+Every scanner is asked the same question on every pickle artifact — *do you flag code execution?*
+(`n/a` = the tool cannot process that input, e.g. fickling does not handle zip/gzip-wrapped pickles.)
 
-| Group | Airlock | picklescan |
-| --- | :---: | :---: |
-| **Adversarial** (14 evasive payloads) | **14/14** | 10/14 |
-| **Real models** (18 benign `.bin`) | 0/18 | 0/18 |
+| Group | Airlock | picklescan | modelscan | fickling |
+| --- | :---: | :---: | :---: | :---: |
+| **Adversarial** (14 evasive payloads) | **14/14** | 11/14 | 9/14 | 9/14 |
+| **Real models** (18 benign `.bin`) | **0/18** | 0/18 | 0/18 | 0/18 |
 
 Three takeaways:
 
-- **On evasive payloads Airlock catches more** than picklescan — the **gzip/zlib-compressed** and
-  **base64-staged** variants (and it handles the `.npy` object array picklescan's file-path entry
-  skips) — because it decompresses and decodes one level before disassembling.
-- **On the format-spoofing file both flag code execution** (a current picklescan sniffs content), but
-  only Airlock emits the explicit **M6 format-mismatch** finding that names the deception.
-- **On real benign models both agree: no code-execution false alarms.** Airlock still reports the
-  pickle *surface* risk (M2) and the missing-safetensors/provenance advisories (M4/M7) — a risk
-  posture, not a cry of "malware" — which is the correct, non-noisy behavior.
+- **Airlock is the only scanner that catches all 14 evasions.** Its edge is the **gzip/zlib-compressed**
+  and **base64-staged** variants — it decompresses and decodes one level before disassembling — which
+  every other tool misses.
+- **On the format-spoofing file, current picklescan sniffs content and catches it too**, but only
+  Airlock emits the explicit **M6 format-mismatch** finding that names the deception.
+- **On real benign models all four agree: 0/18 code-execution false alarms.** This true-negative parity
+  is the number that matters most — catching attacks is easy if you cry wolf; not flagging 18 legit
+  models as malware is the hard part. (Airlock still reports the pickle *surface* risk M2 and the
+  provenance advisories M4/M7 — a risk posture, not a false alarm.)
 
-Reproduce with `python packages/airlock/scripts/benchmark.py datasets/corpus.txt`.
+Reproduce with `pip install picklescan modelscan fickling` then
+`python packages/airlock/scripts/benchmark.py datasets/corpus.txt`. Missing competitors are simply
+omitted, so it runs with whatever is installed.
 
 ## 4. Research-driven detectors
 

@@ -11,6 +11,13 @@ from the individual components up to the governable whole.*
 
 `models` · `MCP servers` · `tool-specs` · `agent assemblies` · `datasets` · `prompts` · `dependencies`
 
+[![CI](https://github.com/mk12002/Bulwark/actions/workflows/ci.yml/badge.svg)](https://github.com/mk12002/Bulwark/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+![Tests](https://img.shields.io/badge/tests-200%2B%20passing-brightgreen.svg)
+![Style](https://img.shields.io/badge/lint-ruff%20%2B%20mypy-informational.svg)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 </div>
 
 ---
@@ -66,6 +73,14 @@ manifest scan ./project --scan-risk --govern         # + Airlock/Warden risk inl
 Every tool is **deterministic-first** (fully useful with zero AI), **CI-friendly** (`--fail-on`
 exit codes + SARIF for GitHub code scanning), and **defensive-only**: it *detects and reports*, never
 executes or imports the artifacts it scans, and every test fixture uses benign, inert markers.
+
+<div align="center">
+
+*`bulwark scan ./project --scan-risk --govern` — the whole suite in one command (real output):*
+
+![Bulwark suite scan folding Airlock + Warden findings into one AI-BOM](docs/demo_suite.svg)
+
+</div>
 
 ## What's inside
 
@@ -142,10 +157,10 @@ Detection lives in **YAML rule packs**, not hardcoded — the community can exte
   ATLAS / CWE / NIST AI RMF / EU AI Act references throughout.
 - **Measured, not asserted** — validated on **19 real public HuggingFace models** (100% had a
   supply-chain finding; 95% ship pickle weights), a **14-payload adversarial suite** Airlock catches
-  **14/14**, and a head-to-head **benchmark vs. picklescan** (14/14 vs 10/14 on evasive payloads; both
-  0/18 false alarms on benign models). Detectors target the 2025 bypass wave directly — format/extension
-  confusion (CVE-2025-10155 class) and a Fickling-style import allowlist. Full methodology:
-  [`docs/EMPIRICAL_VALIDATION.md`](docs/EMPIRICAL_VALIDATION.md).
+  **14/14**, and a four-way **benchmark vs. picklescan / modelscan / fickling** (Airlock is the only one
+  at 14/14 on evasive payloads; all four post 0/18 false alarms on benign models). Detectors target the
+  2025 bypass wave directly — format/extension confusion (CVE-2025-10155 class) and a Fickling-style
+  import allowlist. Full methodology: [`docs/EMPIRICAL_VALIDATION.md`](docs/EMPIRICAL_VALIDATION.md).
 - **Reproducible research angle** — each tool ships a corpus/study harness for an empirical measurement
   of AI-supply-chain hygiene ("we scanned N public artifacts and X% were vulnerable").
 - **Green everywhere** — 5 packages, 200+ tests, ruff + mypy + pytest all passing via one command

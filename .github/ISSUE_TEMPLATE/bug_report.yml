@@ -1,0 +1,58 @@
+name: 🐛 Bug report
+description: Something in Bulwark isn't working as expected.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. **Do not report security vulnerabilities here** — see `SECURITY.md`
+        and use a private advisory instead.
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package is affected?
+      options:
+        - bulwark-core
+        - airlock
+        - warden
+        - manifest
+        - bulwark (meta-CLI)
+        - not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact command(s). If it involves an artifact, describe it — do NOT attach real malware.
+      placeholder: |
+        1. airlock scan model ./path
+        2. ...
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, and `bulwark version` (or the tool's `version`) output.
+      render: shell
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmations
+      options:
+        - label: This is not a security vulnerability (those go through SECURITY.md).
+          required: true
+        - label: Any attached/described artifact is benign (no real malware or secrets).
+          required: true

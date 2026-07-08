@@ -1,0 +1,20 @@
+# BENIGN, inert fixture: an agent that ingests untrusted web content AND can read
+# secrets AND can egress — the full attacker-triggerable exfiltration kill chain.
+# Trips A2-injectable-exfil-flow (CRITICAL) and A2-injectable-high-impact-action.
+name: web-research-agent
+model: gpt-4o
+autonomy: autonomous
+system_prompt: "You research topics on the web for the user."
+tools:
+  - name: web_browser
+    description: "Browse the web and read the contents of any web page (web search)."
+    scopes: []
+  - name: read_secrets
+    description: "Read secrets and credentials from the local vault."
+    scopes: ["vault/*"]
+  - name: send_webhook
+    description: "Send data to any external webhook URL."
+    scopes: []
+  - name: run_shell
+    description: "Run a shell command on the host."
+    scopes: ["*"]

@@ -198,33 +198,37 @@ Locked in by [`packages/airlock/tests/test_adversarial.py`](../packages/airlock/
 **Result: Airlock flags M1 on 14/14**, and additionally raises the M6 format-spoofing finding on
 `disguised_safetensors`. A genuine safetensors file is verified to produce **zero** false positives.
 
-### 6.3 Benchmark vs. picklescan — head to head
+### 6.3 Benchmark vs. picklescan / modelscan / fickling — head to head
 
-**Method:** ask both scanners the same question on every pickle artifact — *do you flag code execution?*
-Airlock's answer is "any M1 finding"; picklescan's is "any Dangerous global / non-zero issue count".
+**Method:** ask every installed scanner the same question on every pickle artifact — *do you flag code
+execution?* Airlock = "any M1 finding"; picklescan = "any Dangerous global / non-zero issue"; modelscan =
+"any issue in the scan summary"; fickling = "`check_safety()` severity ≥ `LIKELY_UNSAFE`". A tool that
+cannot process an input (fickling does not handle zip/gzip-wrapped pickles) reports `n/a`.
 
 ```bash
+pip install picklescan modelscan fickling
 python packages/airlock/scripts/benchmark.py datasets/corpus.txt > packages/airlock/docs/BENCHMARK.md
 ```
 
 **Results:**
 
-| Group | Airlock | picklescan |
-| --- | :---: | :---: |
-| **Adversarial** (14 evasive payloads) | **14/14** | 10/14 |
-| **Real models** (18 benign `.bin`) | **0/18** | **0/18** |
+| Group | Airlock | picklescan | modelscan | fickling |
+| --- | :---: | :---: | :---: | :---: |
+| **Adversarial** (14 evasive payloads) | **14/14** | 11/14 | 9/14 | 9/14 |
+| **Real models** (18 benign `.bin`) | **0/18** | **0/18** | **0/18** | **0/18** |
 
 **Honest reading:**
-- Airlock's edge is the **gzip/zlib-compressed** and **base64-staged** variants (it decompresses/decodes
-  a layer before disassembling) plus the `.npy`-object case picklescan's file-path entry skips. On the
-  disguised `.safetensors`, a *current* picklescan (1.0.5, post-CVE-fix) also sniffs content and catches
+- **Airlock is the only scanner catching all 14 evasions.** Its edge is the **gzip/zlib-compressed** and
+  **base64-staged** variants (it decompresses/decodes a layer before disassembling), which the others
+  miss. On the disguised `.safetensors`, a *current* picklescan (1.0.5) also sniffs content and catches
   it — but only Airlock emits the explicit "format-mismatch" finding naming the disguise.
-- **Both scored 0/18 on real benign models.** This true-negative number is the one that matters most:
-  catching attacks is easy if you cry wolf; *not* flagging 18 legitimate models as malware is the hard
-  part. (Airlock still reports the pickle *surface* risk M2 and provenance advisories M4/M7 — a risk
-  posture, not a false alarm.)
+- **All four scored 0/18 on real benign models.** This true-negative parity is the number that matters
+  most: catching attacks is easy if you cry wolf; *not* flagging 18 legitimate models as malware is the
+  hard part. (Airlock still reports the pickle *surface* risk M2 and provenance advisories M4/M7 — a
+  risk posture, not a false alarm.)
 
-**picklescan version benchmarked:** `1.0.5` (installed via `pip install picklescan`).
+**Versions benchmarked:** `picklescan 1.0.5`, `modelscan 0.8.8`, `fickling 0.1.12`. Missing competitors
+are omitted, so the benchmark runs with whatever is installed.
 
 ---
 

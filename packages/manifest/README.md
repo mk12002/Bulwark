@@ -58,13 +58,18 @@ others:
 `models` (weight files + `from_pretrained` refs) · `datasets` (`load_dataset` + data files) ·
 `mcp-servers` (`.mcp.json`) · `prompts` (templates + inline system prompts) · `tools` (function/tool
 specs) · `dependencies` (requirements / pyproject / package.json, AI frameworks flagged) ·
-**`notebooks`** (`.ipynb` cells → models, datasets, and `!pip install` packages).
+**`notebooks`** (`.ipynb` cells → models, datasets, and `!pip install` packages) · **`agents`**
+(agent-manifest / OpenAI-Assistants / CrewAI configs → `agent` components carrying autonomy + wired
+tools, so the BOM reflects assemblies, not just parts — aligned with the emerging CycloneDX Agent BOM).
 
 ## Standards-based output
 
 - **CycloneDX 1.5** (`--format cyclonedx`) — ML/AI component types, purls, hashes, findings as
   properties. Drops into any SBOM tooling.
 - **SPDX 2.3** (`--format spdx`) — for pipelines standardized on SPDX.
+- **VEX** (`--format vex`) — a CycloneDX VEX document seeded from the detected vulnerable dependencies
+  (B4): each becomes a vulnerability entry marked *exploitable*, with the affected component and advisory,
+  ready for a reviewer to flip to `not_affected` with a justification.
 - **JSON / HTML / SARIF / Markdown** — the full `ScanResult` + AIBOM, a shareable report, code-scanning
   ingestion, or a human governance summary.
 

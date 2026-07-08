@@ -50,6 +50,12 @@ SOURCE_CAPS = frozenset(
 SINK_CAPS = frozenset(
     {Capability.NET_OUT, Capability.FS_WRITE, Capability.EMAIL_SEND, Capability.DB_WRITE}
 )
+# Capabilities that ingest attacker-controllable external content — the indirect
+# prompt-injection surface. If a tool can pull in a web page / inbound message, an
+# attacker can plant instructions the agent may follow (OWASP LLM01 → LLM06 chain).
+UNTRUSTED_INPUT_CAPS = frozenset({Capability.BROWSE, Capability.NET_IN})
+# "Crown-jewel" sources: reading these is what an exfil attack actually wants.
+SENSITIVE_SOURCE_CAPS = frozenset({Capability.SECRET_READ, Capability.DB_READ, Capability.FS_READ})
 # High-impact capabilities that should require a human gate.
 HIGH_IMPACT_CAPS = frozenset(
     {

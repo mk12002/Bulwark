@@ -12,9 +12,11 @@ license = { text = "Apache-2.0" }
 authors = [{ name = "Airlock contributors" }]
 keywords = ["security", "mcp", "machine-learning", "supply-chain", "scanner", "sarif"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Security",
 ]
 dependencies = [
@@ -52,14 +54,14 @@ dev = [
 airlock = "airlock.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/airlock/airlock"
-Documentation = "https://github.com/airlock/airlock/blob/main/docs/PROJECT_REFERENCE.md"
+Homepage = "https://github.com/mk12002/Bulwark"
+Repository = "https://github.com/mk12002/Bulwark"
+Documentation = "https://github.com/mk12002/Bulwark/blob/main/docs/PROJECT_REFERENCE_AIRLOCK.md"
+Issues = "https://github.com/mk12002/Bulwark/issues"
+Changelog = "https://github.com/mk12002/Bulwark/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["airlock"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"airlock/rules" = "airlock/rules"
 
 [tool.ruff]
 line-length = 100

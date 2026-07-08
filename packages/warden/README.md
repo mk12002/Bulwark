@@ -43,7 +43,7 @@ $ warden audit devops-agent.yaml --recommend
 | Code | Risk |
 | --- | --- |
 | **A1** | Excessive tool scope (wildcard / root / unconstrained) |
-| **A2** ⭐ | **Toxic combination** — a sensitive source reachable to an egress sink (the flagship check) |
+| **A2** ⭐ | **Toxic combination** — a sensitive source reachable to an egress sink (the flagship check). Escalates to **CRITICAL** when the assembly also ingests untrusted content (browse / inbound), making the chain *attacker-triggerable* via indirect prompt injection: `inject → read secret → exfiltrate`. |
 | **A3** | Missing human-in-the-loop on high-impact actions |
 | **A4** | Over-broad system-prompt authority / weak guardrails |
 | **A5** | Unrestricted egress / exfiltration surface |

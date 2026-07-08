@@ -76,6 +76,15 @@ files/secrets/DB/context) reachable to an *egress sink* (network/email/write-ext
 check. **Detect:** capability graph source→sink reachability in `analysis/graph.py`. **Ref:** OWASP
 LLM06/LLM02, confused-deputy.
 
+*Attacker-triggerable variants (stronger A2).* A plain pairing says two capabilities *could* be
+chained; it becomes a real kill chain when the assembly also ingests **untrusted external content**
+(`BROWSE`/`NET_IN` — the indirect-prompt-injection surface). `graph.py` emits two escalated signals:
+`agent.injectable_toxic_flow` (**CRITICAL** — untrusted input + a crown-jewel source + an egress sink =
+`inject → read secret → exfiltrate`, fully attacker-controllable) and `agent.injectable_action`
+(untrusted input + an ungated high-impact tool = injected content can trigger a dangerous action). This
+mirrors the "toxic flow" emphasis in the MCP-security literature. **Ref:** OWASP LLM01 (Prompt
+Injection) → LLM06.
+
 **A3 — Missing human-in-the-loop on high-impact actions.** *(HIGH)* Irreversible/destructive/financial
 /external-communication tools with no confirmation gate. **Detect:** high-impact capability without a
 declared gate in `analysis/limits.py`. **Ref:** OWASP LLM06.

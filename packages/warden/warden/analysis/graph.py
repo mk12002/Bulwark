@@ -12,10 +12,14 @@ from __future__ import annotations
 from bulwark_core.signals import SignalBundle
 
 from warden.spec.model import (
+    HIGH_IMPACT_CAPS,
+    SENSITIVE_SOURCE_CAPS,
     SINK_CAPS,
     SOURCE_CAPS,
+    UNTRUSTED_INPUT_CAPS,
     AgentSpec,
     Capability,
+    Gate,
     Tool,
 )
 
@@ -71,6 +75,61 @@ def collect(spec: AgentSpec, bundle: SignalBundle) -> None:
             path=names,
             evidence=(
                 f"network egress ({names}) is not allow-listed while sensitive sources exist"
+            ),
+        )
+
+    _collect_injectable_flows(spec, sinks, bundle)
+
+
+def _collect_injectable_flows(
+    spec: AgentSpec, sinks: list[tuple[str, str]], bundle: SignalBundle
+) -> None:
+    """Emit the *attacker-triggerable* variants of A2 — the real kill chain.
+
+    A plain toxic combination says two capabilities *could* be chained. It becomes far
+    worse when the agent also ingests untrusted external content (browse / inbound
+    message): an attacker can plant instructions (indirect prompt injection) that drive
+    the chain. We flag two attacker-controllable flows:
+
+    - **inject → read secret → exfiltrate** (untrusted input + crown-jewel source + egress sink)
+    - **inject → high-impact action** (untrusted input + an ungated shell/exec/financial tool)
+    """
+    injectors = [t for t in spec.tools if t.capabilities & UNTRUSTED_INPUT_CAPS]
+    if not injectors:
+        return
+    inj_names = ", ".join(t.name for t in injectors[:3])
+
+    crown = [t for t in spec.tools if t.capabilities & SENSITIVE_SOURCE_CAPS]
+    if crown and sinks:
+        src = crown[0].name
+        sink = sinks[0][0]
+        bundle.add(
+            "agent.injectable_toxic_flow",
+            f"{inj_names}=>{src}=>{sink}",
+            path=f"{inj_names} -> {src} -> {sink}",
+            evidence=(
+                f"untrusted input ('{inj_names}') can inject instructions that drive "
+                f"'{src}' (sensitive read) into '{sink}' (egress) — a fully "
+                f"attacker-triggerable exfiltration path"
+            ),
+        )
+
+    ungated_high = [
+        t
+        for t in spec.tools
+        if (t.capabilities & HIGH_IMPACT_CAPS)
+        and t.gate == Gate.NONE
+        and not (t.capabilities & {Capability.SHELL, Capability.CODE_EXEC} and t.sandboxed)
+    ]
+    if ungated_high:
+        target = ungated_high[0].name
+        bundle.add(
+            "agent.injectable_action",
+            f"{inj_names}=>{target}",
+            path=f"{inj_names} -> {target}",
+            evidence=(
+                f"untrusted input ('{inj_names}') can inject instructions that trigger "
+                f"'{target}' — an ungated high-impact action — with no human in the loop"
             ),
         )
 

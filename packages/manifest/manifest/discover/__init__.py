@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 # Register built-in discoverers on import.
+import manifest.discover.agents
 import manifest.discover.datasets
 import manifest.discover.deps
 import manifest.discover.mcp

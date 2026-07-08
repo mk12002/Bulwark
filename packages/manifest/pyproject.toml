@@ -11,6 +11,14 @@ requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Bulwark contributors" }]
 keywords = ["ai-bom", "sbom", "cyclonedx", "governance", "nist-ai-rmf", "supply-chain"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
 dependencies = [
     "bulwark-core",
     "typer>=0.12",
@@ -38,11 +46,15 @@ dev = [
 [project.scripts]
 manifest = "manifest.cli:app"
 
+[project.urls]
+Homepage = "https://github.com/mk12002/Bulwark"
+Repository = "https://github.com/mk12002/Bulwark"
+Documentation = "https://github.com/mk12002/Bulwark/blob/main/docs/PROJECT_REFERENCE_MANIFEST.md"
+Issues = "https://github.com/mk12002/Bulwark/issues"
+Changelog = "https://github.com/mk12002/Bulwark/blob/main/CHANGELOG.md"
+
 [tool.hatch.build.targets.wheel]
 packages = ["manifest"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"manifest/rules" = "manifest/rules"
 
 [tool.ruff]
 line-length = 100
