@@ -83,3 +83,26 @@ def test_cyclonedx_shape(risky_project: Path) -> None:
     assert any(p.startswith("pkg:pypi/pyyaml@5.3.1") for p in purls)
     # round-trips as JSON
     json.loads(json.dumps(doc))
+
+
+def test_notebook_discovers_models_datasets_pip(risky_project: Path) -> None:
+    bom, _ = _bom(risky_project)
+    names = {c.name for c in bom.components}
+    assert "google/flan-t5-small" in names  # from_pretrained in a notebook cell
+    assert "imdb" in names  # load_dataset in a notebook cell
+    # pip install torch==2.3.0 in the notebook → a pinned library component
+    torch = next((c for c in bom.components if c.name == "torch"), None)
+    assert torch is not None and torch.provenance.version == "2.3.0"
+
+
+def test_spdx_shape(risky_project: Path) -> None:
+    from manifest.bom.spdx import to_spdx
+
+    bom, _ = _bom(risky_project)
+    doc = to_spdx(bom)
+    assert doc["spdxVersion"] == "SPDX-2.3"
+    assert doc["SPDXID"] == "SPDXRef-DOCUMENT"
+    assert all(p["SPDXID"].startswith("SPDXRef-") for p in doc["packages"])
+    # every package is DESCRIBES-related to the document
+    assert any(r["relationshipType"] == "DESCRIBES" for r in doc["relationships"])
+    json.loads(json.dumps(doc))  # serializable

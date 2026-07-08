@@ -46,3 +46,33 @@ rules:
     remediation: >-
       Reject the model; external-data paths must stay within the model directory.
     references: ["CWE-22"]
+
+  - id: M5-tensorflow-pyfunc-op
+    category: M5
+    title: "TensorFlow graph contains a PyFunc (arbitrary Python) op"
+    severity: high
+    confidence: medium
+    match:
+      signal: model.tf_custom_op
+      predicate: non_empty
+    rationale: >-
+      A TensorFlow SavedModel/GraphDef with a PyFunc/EagerPyFunc op runs arbitrary Python
+      embedded in the graph when the model is loaded or executed.
+    remediation: >-
+      Do not load untrusted graphs with PyFunc ops; rebuild the graph without them.
+    references: ["OWASP:LLM05", "CWE-502"]
+
+  - id: M6-tensorflow-io-op
+    category: M6
+    title: "TensorFlow graph contains a host filesystem op"
+    severity: medium
+    confidence: low
+    match:
+      signal: model.tf_io_op
+      predicate: non_empty
+    rationale: >-
+      A ReadFile/WriteFile op inside a TensorFlow graph can touch the host filesystem when
+      the graph runs — unexpected for a pure model artifact.
+    remediation: >-
+      Review why the graph performs filesystem I/O; prefer graphs without host I/O ops.
+    references: ["CWE-73"]

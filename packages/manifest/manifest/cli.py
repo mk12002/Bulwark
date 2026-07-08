@@ -40,6 +40,12 @@ def _emit(result: ScanResult, fmt: str) -> None:
     if fmt == "cyclonedx":
         typer.echo(json.dumps(result.meta.get("cyclonedx", {}), indent=2, ensure_ascii=True))
         return
+    if fmt == "spdx":
+        from manifest.bom.model import AIBOM
+        from manifest.bom.spdx import render_spdx
+
+        typer.echo(render_spdx(AIBOM.model_validate(result.meta["aibom"])))
+        return
     if fmt in ("md", "markdown"):
         from manifest.bom.model import AIBOM
         from manifest.govern import render_governance_md
@@ -71,7 +77,7 @@ def _finish(result: ScanResult, fail_on: str) -> None:
 def scan(
     project: Path = typer.Argument(..., help="Path to an AI project directory."),
     fmt: str = typer.Option(
-        "terminal", "--format", "-f", help="terminal|cyclonedx|json|html|sarif|md"
+        "terminal", "--format", "-f", help="terminal|cyclonedx|spdx|json|html|sarif|md"
     ),
     fail_on: str = typer.Option("high", "--fail-on", help="Exit non-zero at/above this severity."),
     scan_risk: bool = typer.Option(
@@ -134,6 +140,27 @@ def components(
         )
     console.print(table)
     console.print(f"[dim]{len(bom.components)} component(s): {bom.type_counts()}[/dim]")
+
+
+@app.command("diff")
+def diff(
+    old: Path = typer.Argument(..., help="Earlier AI project directory (the baseline)."),
+    new: Path = typer.Argument(..., help="Current AI project directory."),
+) -> None:
+    """Show AI-BOM drift (added/removed/changed components) between two project versions."""
+    from manifest.bom.diff import diff_boms
+    from manifest.bom.model import AIBOM
+    from manifest.discover import DiscoveryContext, discover_project
+    from manifest.resolve import licenses
+
+    def _bom(path: Path) -> AIBOM:
+        bom = discover_project(path)
+        licenses.resolve(bom, DiscoveryContext.build(path))
+        return bom
+
+    result = diff_boms(_bom(old), _bom(new))
+    Console().print(result.render())
+    raise typer.Exit(code=1 if result.has_changes else 0)
 
 
 @rules_app.command("list")

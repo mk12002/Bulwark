@@ -71,23 +71,28 @@ def audit(
         False, "--recommend", help="Print a least-privilege spec + diff."
     ),
     scan_parts: bool = typer.Option(
-        False, "--scan-parts", help="(Phase 3) scan wired MCP parts with Airlock."
+        False, "--scan-parts", help="Scan the MCP servers this assembly wires in with Airlock."
+    ),
+    profile: str = typer.Option(
+        "balanced", "--profile", help="Audit posture: strict|balanced|permissive."
     ),
     ai: bool = typer.Option(False, "--ai", help="Enable optional AI enrichment (off by default)."),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Compact one-line-per-finding output."),
 ) -> None:
     """Audit an assembled agent for excessive agency (A1–A10)."""
+    from warden.policy import apply_profile, get_profile
     from warden.scanner import WardenScanner
 
-    scanner = WardenScanner(_load_engine())
+    try:
+        prof = get_profile(profile)
+    except ValueError as exc:
+        _err.print(f"[bold red]{exc}[/bold red]")
+        raise typer.Exit(code=2) from exc
+
+    scanner = WardenScanner(_load_engine(), scan_parts=scan_parts)
     result = scanner.scan(str(target))
     result = _enrich(result, ai)
-
-    if scan_parts:
-        _err.print(
-            "[dim]--scan-parts is a Phase 3 feature; skipping the Airlock bridge for now.[/dim]"
-        )
-
+    result = apply_profile(result, prof)
     _emit(result, fmt, quiet=quiet)
 
     if recommend_flag:

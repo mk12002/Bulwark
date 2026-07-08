@@ -4,7 +4,12 @@
 
 Part of the **Bulwark** suite (see `BULWARK.md`). Manifest reuses `bulwark-core` (findings, severity,
 rules, report, AI) and composes **Airlock** (parts) and **Warden** (assembly) as risk backends. This
-document is the source of truth for Manifest's design. Build it last.
+document is the source of truth for Manifest's design.
+
+**Status (v0.1, shipped):** all discoverers (including notebooks), provenance/license/OSV resolution,
+B1–B9, the Airlock/Warden risk bridges (`--scan-risk`), CycloneDX **and** SPDX output, NIST AI RMF
+**and** EU AI Act mapping (`--govern`), the risk register, and BOM diff (`manifest diff`) are built and
+tested green. Roadmap markers below are retained as history; every listed capability is complete.
 
 ---
 
@@ -46,6 +51,9 @@ execute it** — and each emits components:
 - **Tools/functions** (`discover/tools.py`): functions/tools exposed to an agent.
 - **Dependencies** (`discover/deps.py`): `requirements.txt`, `pyproject.toml`, `package.json` —
   flag AI/ML libs specifically, but inventory all.
+- **Notebooks** (`discover/notebooks.py`): parses `.ipynb` cell source and extracts
+  `from_pretrained`/`load_dataset` refs and `!pip install` packages → MODEL/DATASET/LIBRARY
+  components, with `location` recorded as `path#cellN` so a finding points at the exact cell.
 
 Discoverers are additive and independent; the registry runs all and merges into one AIBOM. Adding a
 component type never touches existing ones.
@@ -150,11 +158,14 @@ CycloneDX vulnerabilities/properties. Findings themselves remain `bulwark_core.F
 
 ## 6. Governance layer
 
-`govern/controls.py` maps discovered gaps/findings to a **control framework** — default **NIST AI RMF**
-(Govern/Map/Measure/Manage functions) — producing a coverage summary and per-control status. This is
-advisory (B9) and clearly labeled as guidance, not certification. Optionally extendable to EU AI Act
-article mapping. `govern/report.py` emits a governance summary + a **risk register** (component → risk →
-severity → recommended action) — exactly the artifact a security/GRC reviewer wants.
+`govern/controls.py` maps discovered gaps/findings to **two control frameworks**: **NIST AI RMF**
+(`assess()` over the Govern/Map/Measure/Manage functions) **and** the **EU AI Act**
+(`assess_eu_ai_act()`, mapping finding categories to Articles 10/11/12/13/14/15). Both produce a
+coverage summary and per-control status, are emitted under `meta["governance"]`, and are surfaced by
+`--govern`. Both are advisory (B9) and clearly labeled as guidance, not certification. `govern/report.py`
+emits a governance summary (with a dedicated "EU AI Act mapping (advisory)" section) + a **risk
+register** (component → risk → severity → recommended action) — exactly the artifact a security/GRC
+reviewer wants.
 
 This is the intersection Mohit is positioning for: architecture + GRC. Keep the mapping transparent and
 sourced (cite the framework), never overclaim compliance.
@@ -163,11 +174,20 @@ sourced (cite the framework), never overclaim compliance.
 
 ## 7. Reports & output
 
-- **CycloneDX JSON** — primary machine format (interoperable).
+- **CycloneDX 1.5 JSON** (`bom/cyclonedx.py`) — primary machine format (interoperable ML-BOM).
+- **SPDX 2.3 JSON** (`bom/spdx.py`, `--format spdx`) — for pipelines standardized on SPDX; sanitized
+  `SPDXRef-*` ids, packages, and `DESCRIBES` relationships.
 - **JSON** — the full `ScanResult` + `AIBOM`.
 - **HTML/Markdown** — human BOM with risk badges per component + governance summary.
 - **SARIF** — governance findings for CI (ruleId = B-code; imported M/P/A findings included).
 - `--fail-on SEV` gates pipelines.
+
+### 7.1 BOM diff (drift)
+
+`bom/diff.py` (`diff_boms`) compares two AIBOMs: components present in one and not the other are
+**added/removed**; a same-`(type,name)` component whose key or tracked attributes (version, hash,
+license id/risk) changed is **changed** (e.g. a version bump or re-license). `manifest diff ./old ./new`
+prints the delta and exits non-zero when anything changed, so CI can gate on unexpected drift.
 
 ---
 
@@ -186,14 +206,16 @@ degrades gracefully.
 ## 9. CLI
 
 ```
-manifest scan <project-dir> [--format cyclonedx|json|html|sarif|md]
+manifest scan <project-dir> [--format cyclonedx|spdx|json|html|sarif|md]
                             [--fail-on SEV] [--scan-risk] [--govern] [--offline] [--ai]
 manifest components <project-dir>     # list discovered components (debug discoverers)
+manifest diff <old-dir> <new-dir>     # AI-BOM drift; exits non-zero on any change
 manifest rules list|lint
 manifest version
 ```
 
-`--scan-risk` enables the Airlock/Warden bridges; `--govern` adds the control mapping + risk register.
+`--scan-risk` enables the Airlock/Warden bridges; `--govern` adds the NIST AI RMF + EU AI Act mapping
+and the risk register.
 
 ---
 
@@ -201,9 +223,10 @@ manifest version
 
 - **Benign sample projects.** `sample_project_clean/` (pinned components, safetensors model, permissive
   licenses, clean deps) and `sample_project_risky/` (unpinned model → B1, non-commercial license → B3,
-  a dep with a known OSV advisory → B4, a referenced secret → B7). No real secrets; use obvious fake
-  placeholders.
-- Golden-file tests for CycloneDX output shape and for the component inventory.
+  a dep with a known OSV advisory → B4, a referenced secret → B7, a pickle model for the B5 bridge, and
+  an `explore.ipynb` for the notebook discoverer). No real secrets; use obvious fake placeholders.
+- Golden-file tests for CycloneDX **and SPDX** output shape and for the component inventory.
+- Tests for the notebook discoverer, EU AI Act mapping, and BOM diff.
 - Bridge tests use Airlock/Warden fixtures so risk attaches deterministically.
 - Tests assert on component `type` and finding `category`+`severity`, not prose.
 
@@ -220,12 +243,13 @@ credibility with security/governance audiences. GitHub Action emits the BOM as a
 
 ## 12. Roadmap
 
-- **v0.1** — Phases 0–1 (discoverers, CycloneDX, provenance/license/vuln, B1–B4/B6–B8).
-- **v0.2** — Phase 2 (Airlock/Warden bridges, B5).
-- **v0.3** — Phase 3 (NIST AI RMF mapping, risk register, HTML, CI gate).
-- **v0.4** — Phase 4 (AI enrichment).
-- **v0.5+** — more discoverers (JS/TS agents, notebooks), SPDX output, EU AI Act mapping, diff mode
-  (BOM drift between versions).
+- ✅ **v0.1** — discoverers, CycloneDX, provenance/license/OSV, B1–B4/B6–B8.
+- ✅ **v0.2** — Airlock/Warden bridges, B5.
+- ✅ **v0.3** — NIST AI RMF mapping, risk register, HTML, CI gate.
+- ✅ **v0.4** — AI enrichment.
+- ✅ **v0.5** — notebook discoverer, SPDX output, EU AI Act mapping, BOM diff (drift between versions).
+- ⏭️ **v0.6+** — more discoverers (JS/TS agents), richer license-compatibility matrix, hosted BOM
+  dashboard.
 
 ---
 

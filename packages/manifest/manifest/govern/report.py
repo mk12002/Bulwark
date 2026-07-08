@@ -5,7 +5,7 @@ from __future__ import annotations
 from bulwark_core.findings import Finding
 
 from manifest.bom.model import AIBOM
-from manifest.govern.controls import RMF_FUNCTIONS, assess
+from manifest.govern.controls import EU_AI_ACT, RMF_FUNCTIONS, assess, assess_eu_ai_act
 
 
 def risk_register(findings: list[Finding], bom: AIBOM) -> list[dict]:
@@ -45,6 +45,20 @@ def render_governance_md(findings: list[Finding], bom: AIBOM) -> str:
         e = a[fn]
         lines.append(
             f"| {fn} | {e['status']} | {e['count']} | {', '.join(e['categories']) or '-'} |"
+        )
+
+    eu = assess_eu_ai_act(findings)
+    lines += [
+        "",
+        "## EU AI Act mapping (advisory)",
+        "",
+        "| Article | Status | Findings | Categories |",
+        "| --- | --- | --- | --- |",
+    ]
+    for article in EU_AI_ACT:
+        e = eu[article]
+        lines.append(
+            f"| {article} | {e['status']} | {e['count']} | {', '.join(e['categories']) or '-'} |"
         )
 
     lines += [

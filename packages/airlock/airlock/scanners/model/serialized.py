@@ -182,6 +182,47 @@ def _collect_onnx(file: ArtifactFile, bundle: SignalBundle) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# TensorFlow SavedModel / frozen graph (protobuf)
+# --------------------------------------------------------------------------- #
+
+# Op types that execute arbitrary Python/host code inside a TF graph on load/run.
+_TF_DANGEROUS_OPS = (b"PyFunc", b"PyFuncStateless", b"EagerPyFunc")
+# Ops that read/write the host filesystem when the graph runs.
+_TF_IO_OPS = (b"ReadFile", b"WriteFile", b"MergeV2Checkpoints", b"SaveV2")
+
+
+def _collect_tensorflow(file: ArtifactFile, bundle: SignalBundle) -> None:
+    try:
+        with file.path.open("rb") as fh:
+            body = fh.read(_SCAN_BYTES)
+    except OSError:
+        return
+    # Only treat protobuf that looks like a TF graph (SavedModel / GraphDef).
+    if b"tensorflow" not in body and b"saved_model" not in body and b"node" not in body:
+        return
+    for marker in _TF_DANGEROUS_OPS:
+        if marker in body:
+            bundle.add(
+                "model.tf_custom_op",
+                file.relpath,
+                path=file.relpath,
+                detail=marker.decode(),
+                evidence=f"TensorFlow graph contains a {marker.decode()} op (executes Python)",
+            )
+            break
+    for marker in _TF_IO_OPS:
+        if marker in body:
+            bundle.add(
+                "model.tf_io_op",
+                file.relpath,
+                path=file.relpath,
+                detail=marker.decode(),
+                evidence=f"TensorFlow graph contains a filesystem op ({marker.decode()})",
+            )
+            break
+
+
+# --------------------------------------------------------------------------- #
 
 
 def collect(
@@ -195,3 +236,5 @@ def collect(
             _collect_keras(file, bundle)
         elif file.is_onnx:
             _collect_onnx(file, bundle)
+        elif file.is_tensorflow:
+            _collect_tensorflow(file, bundle)

@@ -91,7 +91,13 @@ _LEXICON: dict[Capability, list[str]] = {
         r"db[_ ]?write",
         r"\bupsert\b",
     ],
-    Capability.EMAIL_SEND: [r"send[_ ]?(email|mail)", r"\bsmtp\b", r"\bsendgrid\b", r"\bmailer\b"],
+    Capability.EMAIL_SEND: [
+        r"\bemail\b",
+        r"send[_ ]?mail",
+        r"\bsmtp\b",
+        r"\bsendgrid\b",
+        r"\bmailer\b",
+    ],
     Capability.FINANCIAL: [
         r"\bpayment\b",
         r"\bcharge\b",

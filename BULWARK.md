@@ -2,9 +2,13 @@
 
 *Airlock scans the parts. Warden scans the assembly. Manifest inventories it all.*
 
-This document defines how the three tools live together. Read it before building Warden or
-Manifest. Each tool also has its own `CLAUDE.md` (build instructions) and
-`docs/PROJECT_REFERENCE_*.md` (deep design).
+This document defines how the three tools live together and the contract they share. Each tool also
+has its own `CLAUDE.md` (build instructions) and `docs/PROJECT_REFERENCE_*.md` (deep design).
+
+**Status (v0.1):** all three tools ship. `bulwark-core` is extracted and tool-agnostic; Airlock,
+Warden, and Manifest are all built, tested green, and compose as designed
+(`manifest scan --scan-risk` folds Airlock + Warden findings into the AI-BOM). The build plan below
+is preserved as the record of *how* the suite was assembled; every step is complete.
 
 ---
 
@@ -58,10 +62,15 @@ bulwark/                                  # repo root (uv workspace)
     manifest/                             # tool 3
       pyproject.toml                      # depends on bulwark-core, airlock, warden
       manifest/ ...
+    bulwark/                              # the meta-CLI (one front door over all three)
+      pyproject.toml                      # depends on bulwark-core, airlock, warden, manifest
+      bulwark/cli.py                      # mounts each tool + `bulwark scan` full-pipeline
   docs/
     PROJECT_REFERENCE_AIRLOCK.md
     PROJECT_REFERENCE_WARDEN.md
     PROJECT_REFERENCE_MANIFEST.md
+    EMPIRICAL_VALIDATION.md               # corpus study + adversarial suite + picklescan benchmark
+  check.py / noxfile.py                   # one-command quality gate across every package
 ```
 
 Use **`uv` workspaces** (preferred) or Hatch/`pip -e` path dependencies. Each package declares its own
@@ -99,9 +108,10 @@ in YAML rule packs, not hardcoded.
 
 ---
 
-## Migrating Airlock into the monorepo (do this first)
+## Migrating Airlock into the monorepo (done)
 
-Airlock was built standalone with a `core/` folder. Promote that to the shared package:
+Airlock was built standalone with a `core/` folder; it was promoted to the shared package as follows.
+This is complete — recorded here as the extraction contract that future refactors must preserve:
 
 1. Create the workspace root and `packages/` layout above.
 2. Move `airlock/core/*` → `packages/bulwark-core/bulwark_core/*`; rename the import root
@@ -118,10 +128,19 @@ suite; tools depend on core).
 
 ---
 
-## Build order
+## Build order (all complete)
 
-1. Migrate Airlock → monorepo + extract `bulwark-core`.
-2. **Warden** (reuses core; adds the AgentSpec IR + capability graph).
-3. **Manifest** (reuses core; adds discoverers + CycloneDX; calls Airlock + Warden).
+1. ✅ Migrate Airlock → monorepo + extract `bulwark-core`.
+2. ✅ **Warden** (reuses core; adds the AgentSpec IR + capability graph, agency score, framework
+   importers for manifest/MCP-config/OpenAI-Assistants/LangChain/CrewAI, `--recommend`, `--scan-parts`).
+3. ✅ **Manifest** (reuses core; adds discoverers incl. notebooks + CycloneDX **and** SPDX; OSV vuln
+   lookup; calls Airlock + Warden via risk bridges; NIST AI RMF + EU AI Act mapping; BOM diff).
 
-Ship each to a taggable release before starting the next. A finished tool beats three half-built ones.
+4. ✅ **`bulwark` meta-CLI** (one front door + `bulwark scan` full pipeline) and **empirical
+   validation** — a real-model corpus study, a 13-payload adversarial robustness suite, and a
+   head-to-head picklescan benchmark (see `docs/EMPIRICAL_VALIDATION.md`). One-command quality gate
+   (`python check.py`) matrixed in CI across all five packages.
+
+Each tool is at a taggable v0.1. The suite composes end to end. Remaining roadmap items (PyPI publish,
+a larger cross-tool corpus study, a hosted BOM dashboard) are additive and do not change the core
+contract.

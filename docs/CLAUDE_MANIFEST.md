@@ -4,6 +4,11 @@
 > monorepo. Read `BULWARK.md` (suite + monorepo + shared `bulwark-core` contract) and
 > `docs/PROJECT_REFERENCE_MANIFEST.md` (deep design) first. Build Manifest last: it depends on
 > `bulwark-core`, **Airlock**, and **Warden**.
+>
+> **Status: all five build phases below are complete (v0.1, tested green).** Beyond the base plan,
+> Manifest also ships a notebook discoverer (`discover/notebooks.py`), SPDX 2.3 output (`bom/spdx.py`),
+> EU AI Act mapping alongside NIST AI RMF (`govern/controls.py`), and BOM diff (`bom/diff.py`,
+> `manifest diff`).
 
 ---
 
@@ -65,7 +70,9 @@ manifest/
   cli.py                     # manifest scan <project> [--format ...] [--fail-on ...] [--scan-risk] [--ai]
   bom/
     model.py                 # AIBOM IR: Component, Provenance, License, Relationship (pydantic)
-    cyclonedx.py             # AIBOM → CycloneDX JSON (ML/AI components)
+    cyclonedx.py             # AIBOM → CycloneDX 1.5 JSON (ML/AI components)
+    spdx.py                  # AIBOM → SPDX 2.3 JSON (--format spdx)
+    diff.py                  # diff_boms: AI-BOM drift (added/removed/changed) → `manifest diff`
     render.py                # human-readable HTML/Markdown BOM (via core report)
   discover/
     __init__.py              # discoverer registry (run all, merge components)
@@ -75,6 +82,7 @@ manifest/
     prompts.py               # prompt files/templates/system prompts → prompt components
     tools.py                 # exposed tools/functions → tool components
     deps.py                  # requirements/pyproject/package.json → dependency components
+    notebooks.py             # .ipynb cells → model/dataset/library components (location=path#cellN)
   resolve/
     provenance.py            # source/author/hash/version resolution
     licenses.py              # license detection + compatibility/risk
@@ -83,8 +91,8 @@ manifest/
     airlock_bridge.py        # call Airlock on model/mcp components → findings
     warden_bridge.py         # call Warden on discovered assemblies → findings
   govern/
-    controls.py              # map findings/gaps → a control framework (e.g. NIST AI RMF) [advisory]
-    report.py                # governance summary + risk register
+    controls.py              # map findings/gaps → NIST AI RMF *and* EU AI Act [advisory]
+    report.py                # governance summary (incl. EU AI Act section) + risk register
   rules/
     manifest/*.yaml          # B1..B9 governance rule packs
   fixtures/

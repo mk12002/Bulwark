@@ -14,7 +14,9 @@ from pathlib import Path
 PICKLE_EXTENSIONS = {".bin", ".pt", ".pth", ".ckpt", ".pkl", ".pickle", ".joblib", ".dill"}
 SAFETENSORS_EXTENSIONS = {".safetensors"}
 # Memory-safe serialization formats (no code execution on load).
-SAFE_FORMAT_EXTENSIONS = SAFETENSORS_EXTENSIONS | {".gguf", ".ggml"}
+# safetensors, GGUF/GGML (llama.cpp), Flax/JAX msgpack, and PMML (XML) are all
+# tensor/data-only formats with no executable opcodes.
+SAFE_FORMAT_EXTENSIONS = SAFETENSORS_EXTENSIONS | {".gguf", ".ggml", ".msgpack", ".pmml"}
 CONFIG_EXTENSIONS = {".json"}
 CODE_EXTENSIONS = {".py"}
 # numpy arrays: object dtype embeds a pickle.
@@ -22,6 +24,8 @@ NUMPY_EXTENSIONS = {".npy", ".npz"}
 # Keras/TF: HDF5 or the v3 zip container; Lambda layers embed Python.
 KERAS_EXTENSIONS = {".h5", ".hdf5", ".keras"}
 ONNX_EXTENSIONS = {".onnx"}
+# TensorFlow SavedModel / frozen graph protobuf; may reference custom/py_func ops.
+TF_EXTENSIONS = {".pb"}
 
 # Patterns of interest for a partial HF download.
 _HF_ALLOW_PATTERNS = [
@@ -41,6 +45,9 @@ _HF_ALLOW_PATTERNS = [
     "*.hdf5",
     "*.keras",
     "*.onnx",
+    "*.pb",
+    "*.msgpack",
+    "*.pmml",
     "*.py",
     "*.md",
     "*.txt",
@@ -79,6 +86,10 @@ class ArtifactFile:
     @property
     def is_onnx(self) -> bool:
         return self.suffix in ONNX_EXTENSIONS
+
+    @property
+    def is_tensorflow(self) -> bool:
+        return self.suffix in TF_EXTENSIONS
 
     @property
     def is_config(self) -> bool:

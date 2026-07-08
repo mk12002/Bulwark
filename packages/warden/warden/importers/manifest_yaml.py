@@ -21,10 +21,15 @@ from warden.spec.model import AgentSpec
 
 
 def detect(path: Path, data: Any) -> bool:
-    """A mapping with tools/data_sources/system_prompt looks like a manifest."""
-    return isinstance(data, dict) and any(
-        k in data for k in ("tools", "data_sources", "system_prompt", "agent")
-    )
+    """A mapping with tools/data_sources/system_prompt — but not a more specific shape."""
+    if not isinstance(data, dict):
+        return False
+    # Defer to the specific importers for their shapes.
+    if data.get("object") == "assistant" or "instructions" in data or "mcpServers" in data:
+        return False
+    if any(isinstance(v, dict) and "role" in v and "goal" in v for v in data.values()):
+        return False  # CrewAI
+    return any(k in data for k in ("tools", "data_sources", "system_prompt", "agent"))
 
 
 def load(path: Path, data: Any) -> AgentSpec:

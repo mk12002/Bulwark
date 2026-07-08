@@ -44,25 +44,28 @@ def register(name: str, detect: Detect, load: Load) -> None:
 
 
 def _parse(path: Path) -> Any:
+    """Best-effort structured parse. Returns None for non-structured files (e.g. .py)."""
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
         raise ImportError_(f"cannot read {path}: {exc}") from exc
     try:
-        return yaml.safe_load(text)  # YAML is a JSON superset
-    except yaml.YAMLError as exc:
-        raise ImportError_(f"cannot parse {path}: {exc}") from exc
+        data = yaml.safe_load(text)  # YAML is a JSON superset
+    except yaml.YAMLError:
+        return None  # code files / non-YAML — text-based importers may still handle it
+    return data if isinstance(data, dict | list) else None
 
 
 def import_agent(path: Path) -> tuple[AgentSpec, str]:
     """Detect the config type, import it, normalize, and return (spec, importer)."""
     # Ensure built-in importers are registered.
+    import warden.importers.crewai
+    import warden.importers.langchain
     import warden.importers.manifest_yaml
-    import warden.importers.mcp_config  # noqa: F401
+    import warden.importers.mcp_config
+    import warden.importers.openai_assistant  # noqa: F401
 
     data = _parse(path)
-    if data is None:
-        raise ImportError_(f"{path}: empty config")
     for importer in _REGISTRY:
         if importer.detect(path, data):
             return normalize(importer.load(path, data)), importer.name

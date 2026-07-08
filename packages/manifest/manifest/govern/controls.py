@@ -54,6 +54,37 @@ def assess(findings: list[Finding]) -> dict[str, dict]:
     return out
 
 
+# --------------------------------------------------------------------------- #
+# EU AI Act mapping (advisory; a second control framework alongside NIST AI RMF)
+# --------------------------------------------------------------------------- #
+
+# Article/theme → the finding-category prefixes it primarily relates to.
+EU_AI_ACT: dict[str, tuple[str, ...]] = {
+    "Art.10 Data governance": ("B6", "B1", "B2"),
+    "Art.11 Technical documentation": ("B1", "B2", "B8"),
+    "Art.12 Record-keeping": ("B8", "B9"),
+    "Art.13 Transparency": ("B3",),
+    "Art.14 Human oversight": ("A3", "A10", "A4"),
+    "Art.15 Accuracy, robustness & cybersecurity": ("B4", "B5", "B7", "M", "P", "A2", "A5", "A8"),
+}
+
+
+def assess_eu_ai_act(findings: list[Finding]) -> dict[str, dict]:
+    """Map findings to EU AI Act articles. Advisory — not a conformity assessment."""
+    out: dict[str, dict] = {
+        art: {"categories": [], "count": 0, "status": "ok"} for art in EU_AI_ACT
+    }
+    for f in findings:
+        for article, prefixes in EU_AI_ACT.items():
+            if any(f.category == p or f.category.startswith(p) for p in prefixes):
+                entry = out[article]
+                entry["count"] += 1
+                if f.category not in entry["categories"]:
+                    entry["categories"].append(f.category)
+                entry["status"] = "gap"
+    return out
+
+
 def b9_findings(assessment: dict[str, dict]) -> list[Finding]:
     """Emit one advisory B9 finding per RMF function that has open gaps."""
     out: list[Finding] = []

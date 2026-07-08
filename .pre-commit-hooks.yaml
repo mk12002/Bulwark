@@ -1,7 +1,7 @@
-# Airlock pre-commit hooks. In a consuming repo, add to .pre-commit-config.yaml:
+# Bulwark pre-commit hooks. In a consuming repo, add to .pre-commit-config.yaml:
 #
 #   repos:
-#     - repo: https://github.com/airlock/airlock
+#     - repo: https://github.com/mk12002/Bulwark
 #       rev: v0.1.0
 #       hooks:
 #         - id: airlock-scan-model
@@ -9,6 +9,8 @@
 #           files: '\.(bin|pt|pth|ckpt|pkl|safetensors|gguf|onnx|h5|keras|npy|npz)$'
 #         - id: airlock-scan-toolspec
 #           files: 'tools?\.(json|ya?ml)$'
+#         - id: warden-audit
+#           files: '(agent|assistant|crew).*\.(ya?ml|json)$'
 
 - id: airlock-scan-model
   name: Airlock model scan
@@ -22,6 +24,14 @@
   name: Airlock tool-spec scan
   description: Scan changed agent tool-definition files for poisoning/permission risks.
   entry: airlock scan toolspec
+  language: python
+  pass_filenames: true
+  require_serial: true
+
+- id: warden-audit
+  name: Warden agent audit
+  description: Audit changed agent configs for excessive agency (least-privilege).
+  entry: warden audit
   language: python
   pass_filenames: true
   require_serial: true

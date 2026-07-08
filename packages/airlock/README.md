@@ -1,21 +1,27 @@
-# Airlock
+# 🔒 Airlock
 
-**Static security scanner for the AI agent supply chain.** Audit the two kinds of untrusted
-third-party code you plug into an agentic system — **ML model artifacts** and **MCP servers** —
+**Static security scanner for the AI agent supply chain** — and the first tool in the
+[Bulwark](../../README.md) suite (*Airlock scans the parts*). Audit the untrusted third-party code you
+plug into an agentic system — **ML model artifacts**, **MCP servers**, and **agent tool-specs** —
 *before* they run.
 
 One engine, one risk taxonomy, one report format, three scan targets. Think `trivy`/`nikto`, but for
-the agent-tooling and model-loading layer. CLI-first, deterministic-first; AI is an optional
-enrichment layer that is off by default.
+the agent-tooling and model-loading layer. It reads pickle opcodes, MCP tool metadata, and tool
+schemas **statically** — it never loads a model, invokes a tool, or imports repo code. CLI-first,
+deterministic-first; AI is an optional enrichment layer that is off by default.
+
+**Formats it understands:** pickle (`.bin`/`.pt`/`.ckpt`/`.pkl`/joblib/dill) · safetensors · GGUF ·
+ONNX · Keras (`.h5`/`.keras`) · numpy (`.npy`/`.npz` object arrays) · **TensorFlow SavedModel** ·
+**Flax msgpack** · PMML · gzip/zlib-compressed and base64-nested pickles.
 
 ![Airlock scanning a poisoned model fixture](docs/demo.svg)
 
 ```bash
 airlock scan model    ./path/to/model            # or hf:org/name  (pickle, safetensors, GGUF, ONNX, Keras, npy…)
 airlock scan mcp      "python server.py"         # stdio command, or an sse/http URL
-airlock scan toolspec tools.json                 # OpenAI / Anthropic / LangChain tool definitions
+airlock scan toolspec tools.json                 # OpenAI / Anthropic / Bedrock / LangChain tool definitions
 airlock study         corpus.txt                 # scan many targets → aggregate stats
-airlock rules list                               # 38 rules; `rules update --from <feed>` to extend
+airlock rules list                               # 40 rules; `rules update --from <feed>` to extend
 ```
 
 ## Why
@@ -109,6 +115,19 @@ Airlock ingests hostile artifacts, so it defends itself: archive inspection caps
 flags **decompression bombs** (extreme size/ratio), pickle disassembly is **opcode-capped and
 streamed** (never loading a multi-GB file into memory), and base64-encoded **nested pickles** are
 decoded one level deep to catch staged payloads. All limits are tunable via `AIRLOCK_LIMIT_*`.
+
+### Proven, not just claimed
+
+Airlock is validated on real data and against a real competitor — see
+[`docs/EMPIRICAL_VALIDATION.md`](../../docs/EMPIRICAL_VALIDATION.md):
+
+- **Corpus study** over **19 public HuggingFace models** — 100% had a supply-chain finding, 95% ship
+  pickle weights, 89% contain a `REDUCE` opcode. (`python scripts/build_corpus.py` then `airlock study`.)
+- **Adversarial suite** — 13 evasive-but-benign payloads (protocols 0–5, `STACK_GLOBAL`, gzip/zlib,
+  base64-staged, `.npy`, torch-zip). Airlock's static analysis flags **13/13**; locked in by
+  `tests/test_adversarial.py`.
+- **Benchmark vs. picklescan** (`scripts/benchmark.py`) — **13/13 vs 9/13** on evasive payloads (Airlock
+  also decompresses + decodes one level), and **0/18 vs 0/18** false code-exec alarms on benign models.
 
 ### Corpus study & AI evaluation
 

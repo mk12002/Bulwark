@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.rules import RuleEngine
 from bulwark_core.scanner import Scanner
 from bulwark_core.severity import Severity
 from bulwark_core.signals import SignalBundle
@@ -21,6 +22,10 @@ class WardenScanner(Scanner):
     tool = "warden"
     target_type = "agent"
 
+    def __init__(self, engine: RuleEngine, scan_parts: bool = False):
+        super().__init__(engine)
+        self.scan_parts = scan_parts
+
     def collect_signals(self, target: str) -> SignalBundle:
         spec, _importer = import_agent(Path(target))
         return collect_signals(spec)
@@ -29,12 +34,16 @@ class WardenScanner(Scanner):
         """Analyze an already-parsed AgentSpec. Exposed for tests/recommendation."""
         normalize(spec)
         bundle = collect_signals(spec)
-        findings = _dedupe(self.engine.evaluate(bundle))
+        findings = self.engine.evaluate(bundle)
+        if self.scan_parts:
+            from warden.bridge import scan_wired_parts
+
+            findings += scan_wired_parts(spec)
         return ScanResult(
             target=target,
             target_type="agent",
             tool="warden",
-            findings=findings,
+            findings=_dedupe(findings),
             score=agency_score(spec),
             meta={"agent_spec": spec.model_dump(mode="json")},
         )

@@ -265,13 +265,19 @@ loudly at load time (surfaced by `airlock rules lint`).
 ## 6. Model scanner — detailed logic
 
 - **loader.py** — resolve `hf:org/name` via `huggingface_hub` (list + download only the files needed:
-  `*.json`, `*.bin`/`*.pt`/`*.ckpt`/`*.pkl`/`*.safetensors`, `*.py`), or accept a local dir/file.
-  Emit an inventory of files with sizes/formats.
+  `*.json`, `*.bin`/`*.pt`/`*.ckpt`/`*.pkl`/`*.safetensors`, `*.gguf`, `*.pb`, `*.msgpack`, `*.pmml`,
+  `*.py`), or accept a local dir/file. Emit an inventory of files with sizes/formats. Formats
+  understood span pickle-family, safetensors, GGUF/GGML, ONNX, Keras (`.h5`/`.keras`), numpy
+  (`.npy`/`.npz`), **TensorFlow SavedModel** (`.pb`), **Flax msgpack**, **PMML**, plus
+  gzip/zlib-compressed and base64-nested pickles.
 - **pickle_scan.py** — for each pickle-family file, run `pickletools.genops` (does **not** execute
   the pickle), collect the sequence of opcodes and the fully-qualified callables referenced by
   `GLOBAL`/`STACK_GLOBAL`. Emit signals: `pickle.opcodes`, `pickle.imports`, `pickle.has_reduce`.
-- **formats.py** — classify each weight file; emit `model.formats`; if pickle present and safetensors
-  absent → M4 advisory.
+- **serialized.py** — classify each weight file and emit `model.formats`; if pickle present and
+  safetensors absent → M4 advisory. For TensorFlow SavedModel (`.pb`), statically scan for dangerous
+  op markers — `PyFunc`/`PyFuncStateless`/`EagerPyFunc` → `model.tf_custom_op` (M5, HIGH) and
+  `ReadFile`/`WriteFile`/`MergeV2Checkpoints`/`SaveV2` → `model.tf_io_op` (M6, MEDIUM). Safetensors,
+  GGUF/GGML, Flax msgpack, and PMML are treated as safe-format extensions.
 - **remote_code.py** — parse JSON configs; emit `config.trust_remote_code`, `config.auto_map`,
   `repo.custom_py` (list). Any true/non-empty → M5.
 - **archive.py** — for zip-based artifacts, list members; emit `archive.members`,

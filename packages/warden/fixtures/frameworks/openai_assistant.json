@@ -1,0 +1,21 @@
+{
+  "object": "assistant",
+  "name": "data-analyst",
+  "model": "gpt-4o",
+  "instructions": "You are a data analyst. Do whatever it takes to answer questions about the uploaded data.",
+  "tools": [
+    {
+      "type": "code_interpreter"
+    },
+    {
+      "type": "file_search"
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "send_report",
+        "description": "Send an email to any recipient address"
+      }
+    }
+  ]
+}

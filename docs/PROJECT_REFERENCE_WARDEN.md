@@ -6,6 +6,12 @@ Part of the **Bulwark** suite (see `BULWARK.md`). Warden reuses `bulwark-core` f
 severity, the rule engine, reports, and the optional AI layer. This document defines what is
 Warden-specific. It is the source of truth for Warden's design.
 
+**Status (v0.1, shipped):** the AgentSpec IR, capability lexicon, capability graph, agency score,
+A1–A10, the least-privilege recommender (`--recommend`), all five importers (manifest, MCP config,
+OpenAI Assistants, LangChain/LangGraph, CrewAI), the Airlock bridge (`--scan-parts`), and the optional
+AI layer are all built and tested green. The sections below describe the design; the "Later"/roadmap
+markers are retained as history but every listed capability is complete.
+
 ---
 
 ## 1. Thesis & positioning
@@ -36,13 +42,22 @@ The challenge is that agents are configured many ways. Warden solves this with a
 normalized IR** pattern (mirrors Airlock's loader). Importers convert real configs into one
 `AgentSpec`; all analysis runs on the IR, so adding a framework never touches the analysis engine.
 
-Priority importers:
-1. **MCP client configs** — `.mcp.json`, `claude_desktop_config.json` (which servers/tools are wired).
-2. **Generic agent manifest** — a documented YAML/JSON schema describing tools, scopes, system prompt,
-   model, data sources, gates, and limits. This is also the canonical way for a user to describe an
-   agent Warden can't otherwise parse.
-3. *(Later)* **LangGraph/LangChain**, **OpenAI Assistants**, **CrewAI/AutoGen** — best-effort static
-   parsing (never execute the code).
+Importers (all shipped; auto-detected, in priority order — `warden/importers/`):
+1. **MCP client configs** (`mcp_config.py`) — `.mcp.json`, `claude_desktop_config.json` (which
+   servers/tools are wired).
+2. **Generic agent manifest** (`manifest_yaml.py`) — a documented YAML/JSON schema describing tools,
+   scopes, system prompt, model, data sources, gates, and limits. Also the canonical fallback for an
+   agent Warden can't otherwise parse; its `detect` defers to the specific shapes below so it never
+   steals a framework config.
+3. **OpenAI Assistants** (`openai_assistant.py`) — an Assistants API config
+   (`instructions` → system prompt; `function`/`code_interpreter`/`file_search` tools).
+4. **LangChain / LangGraph** (`langchain.py`) — best-effort **static regex** parse of a `.py` file
+   (`Tool(...)` name+description, the model, the system prompt). Never executed or imported.
+5. **CrewAI** (`crewai.py`) — an `agents.yaml` crew (role/goal/backstory/tools/delegation), aggregated
+   into one AgentSpec.
+
+`warden import <config>` prints the normalized AgentSpec so you can see exactly what each importer
+resolved.
 
 ---
 
@@ -223,11 +238,12 @@ PRs.
 
 ## 12. Roadmap
 
-- **v0.1** — Phases 0–1 (IR, importers, capability graph, A1–A5/A10, score).
-- **v0.2** — Phase 2 (recommendation, SARIF/HTML, CI gate).
-- **v0.3** — Phase 3 (framework importers, Airlock bridge / `--scan-parts`, A9).
-- **v0.4** — Phase 4 (AI enrichment).
-- **v0.5+** — richer lexicon, policy profiles (e.g. "strict", "balanced"), org policy files.
+- ✅ **v0.1** — IR, MCP-config + manifest importers, capability graph, A1–A10, agency score.
+- ✅ **v0.2** — least-privilege recommendation, SARIF/HTML, `--fail-on` CI gate.
+- ✅ **v0.3** — framework importers (OpenAI Assistants, LangChain/LangGraph, CrewAI), the Airlock
+  bridge / `--scan-parts`, A9 promoted from advisory to concrete part-level findings.
+- ✅ **v0.4** — optional AI enrichment (`bulwark_core.ai`).
+- ⏭️ **v0.5+** — richer lexicon, policy profiles (e.g. "strict", "balanced"), org policy files.
 
 ---
 

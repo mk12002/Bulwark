@@ -61,12 +61,15 @@ class ManifestScanner(Scanner):
 
         meta: dict = {"aibom": bom.model_dump(mode="json"), "cyclonedx": to_cyclonedx(bom)}
         if self.govern:
-            from manifest.govern import assess, b9_findings, risk_register
+            from manifest.govern import assess, assess_eu_ai_act, b9_findings, risk_register
 
             assessment = assess(findings)
             b9 = b9_findings(assessment)
             findings += b9
-            meta["governance"] = assessment
+            meta["governance"] = {
+                "nist_ai_rmf": assess(findings),
+                "eu_ai_act": assess_eu_ai_act(findings),
+            }
             meta["risk_register"] = risk_register(findings, bom)
 
         return ScanResult(

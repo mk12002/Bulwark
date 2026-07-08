@@ -185,3 +185,35 @@ def test_gguf_alongside_pickle_suppresses_m4(tmp_path: Path) -> None:
     # A safe format exists, so M4-pickle-without-safetensors should NOT fire.
     assert "M4-pickle-without-safetensors" not in {f.id for f in result.findings}
     assert DEFAULT_LIMITS.max_pickle_opcodes > 0
+
+
+def test_tensorflow_pyfunc_op_is_flagged(tmp_path: Path) -> None:
+    d = tmp_path / "tf"
+    d.mkdir()
+    (d / "saved_model.pb").write_bytes(b'tensorflow saved_model \n node ... op: "PyFunc" ...')
+    assert "M5" in {f.category for f in _scan(d).findings}
+
+
+def test_tensorflow_io_op_is_flagged(tmp_path: Path) -> None:
+    d = tmp_path / "tf2"
+    d.mkdir()
+    (d / "graph.pb").write_bytes(b"tensorflow node op ReadFile WriteFile ...")
+    assert "M6" in {f.category for f in _scan(d).findings}
+
+
+def test_plain_protobuf_is_not_flagged_as_tf(tmp_path: Path) -> None:
+    d = tmp_path / "pb"
+    d.mkdir()
+    (d / "random.pb").write_bytes(b"\x08\x01\x12\x03abc")  # not a TF graph
+    (d / "README.md").write_text("# x")
+    assert "M5" not in {f.category for f in _scan(d).findings}
+
+
+def test_flax_msgpack_is_safe_format(tmp_path: Path) -> None:
+    d = tmp_path / "flax"
+    d.mkdir()
+    (d / "params.msgpack").write_bytes(b"\x81\xa6params\x90")
+    (d / "extra.pkl").write_bytes(pickle.dumps({"w": [1]}))
+    result = _scan(d)
+    # msgpack is a memory-safe format → no M4 "pickle without safe alternative".
+    assert "M4-pickle-without-safetensors" not in {f.id for f in result.findings}

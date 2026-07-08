@@ -9,6 +9,7 @@ import manifest.discover.datasets
 import manifest.discover.deps
 import manifest.discover.mcp
 import manifest.discover.models
+import manifest.discover.notebooks
 import manifest.discover.prompts
 import manifest.discover.tools  # noqa: F401
 from manifest.bom.model import AIBOM

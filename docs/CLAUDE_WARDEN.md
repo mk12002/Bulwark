@@ -4,6 +4,10 @@
 > monorepo. Read `BULWARK.md` (suite + monorepo + shared `bulwark-core` contract) and
 > `docs/PROJECT_REFERENCE_WARDEN.md` (deep design) first. Warden must be built only after Airlock has
 > been migrated into the monorepo and `bulwark-core` exists.
+>
+> **Status: all four build phases below are complete (v0.1, tested green).** Notably the framework
+> importers landed as `openai_assistant.py`, `langchain.py` (LangChain/LangGraph, static regex), and
+> `crewai.py` (not a single `langgraph.py`), and the Airlock bridge (`--scan-parts`, A9) shipped.
 
 ---
 
@@ -65,10 +69,13 @@ warden/
     normalize.py             # canonicalization + capability tagging
   importers/
     __init__.py              # registry: detect + dispatch by file/shape
+    base.py                  # _parse + import_agent (lazily registers all importers)
     mcp_config.py            # .mcp.json / claude_desktop_config.json → AgentSpec
-    manifest_yaml.py         # generic agent-manifest (YAML/JSON) → AgentSpec
-    langgraph.py             # (later) LangGraph/LangChain agent → AgentSpec  [best-effort static]
-    openai_assistant.py      # (later) OpenAI Assistants config → AgentSpec
+    manifest_yaml.py         # generic agent-manifest (YAML/JSON); defers to specific shapes → AgentSpec
+    openai_assistant.py      # OpenAI Assistants config → AgentSpec
+    langchain.py             # LangChain/LangGraph .py → AgentSpec  [best-effort static regex]
+    crewai.py                # CrewAI agents.yaml → AgentSpec
+  bridge.py                  # scan_wired_parts: run Airlock on wired MCP servers (--scan-parts, A9)
   analysis/
     capabilities.py          # classify each tool → capability set (shell/fs/net/read/write/...)
     graph.py                 # build capability graph; source→sink reachability
