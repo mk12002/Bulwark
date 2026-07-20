@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -91,6 +93,35 @@ def test_user_rules_merge_rejects_true_duplicates(
     monkeypatch.setenv("AIRLOCK_RULES_DIR", str(dest))
     with pytest.raises(RuleLoadError):
         load_rules()
+
+
+def test_extract_zip_rejects_traversal() -> None:
+    # A rules feed is untrusted input; a member resolving outside the temp dir (zip-slip
+    # via ../ or an absolute path) must never be written.
+    from bulwark_core.rule_feed import _extract_zip
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("good.yaml", "version: 1\ntarget: model\nrules: []\n")
+        zf.writestr("../escape.yaml", "x: 1\n")
+        zf.writestr("nested/../../escape2.yaml", "x: 1\n")
+    dest = Path(_extract_zip(buf.getvalue()))
+    assert {p.name for p in dest.rglob("*.yaml")} == {"good.yaml"}
+    # Nothing escaped the extraction directory.
+    assert not (dest.parent / "escape.yaml").exists()
+    assert not (dest.parent.parent / "escape2.yaml").exists()
+
+
+def test_extract_zip_caps_oversized_members() -> None:
+    # A decompression-bomb member (declared size over the cap) is skipped, not written.
+    from bulwark_core.limits import Limits
+    from bulwark_core.rule_feed import _extract_zip
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("big.yaml", "a: " + "x" * 5000)
+    dest = Path(_extract_zip(buf.getvalue(), Limits(max_member_bytes=10)))
+    assert list(dest.rglob("*.yaml")) == []
 
 
 # --------------------------------------------------------------------------- #

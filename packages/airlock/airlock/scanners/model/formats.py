@@ -6,6 +6,7 @@ is flagged for lacking a safe alternative, and surfaces the full format inventor
 
 from __future__ import annotations
 
+from bulwark_core.limits import read_bounded
 from bulwark_core.signals import SignalBundle
 
 from airlock.scanners.model.loader import ModelInventory
@@ -30,7 +31,7 @@ def collect(inventory: ModelInventory, bundle: SignalBundle) -> None:
     for gguf in inventory.files:
         if gguf.suffix in {".gguf", ".ggml"}:
             try:
-                head = gguf.path.read_bytes()[:4]
+                head = read_bounded(gguf.path, 4)  # magic only — never slurp the whole GGUF
             except OSError:
                 head = b""
             bundle.add(

@@ -68,6 +68,36 @@ def test_html_contains_finding() -> None:
     assert "<!doctype html>" in html.lower()
 
 
+def test_html_report_escapes_hostile_strings() -> None:
+    # The report renders attacker-controlled strings from a hostile artifact. They
+    # must be HTML-escaped, or opening a report becomes a scanner-report XSS.
+    result = ScanResult(
+        target="<svg onload=alert(1)>",
+        target_type="model",
+        tool="airlock",
+        findings=[
+            Finding(
+                id="M1",
+                category="M1",
+                title="t",
+                severity=Severity.CRITICAL,
+                confidence="high",
+                location=Location(target="x", path="<script>alert(1)</script>.bin"),
+                evidence="<img src=x onerror=alert(document.domain)>",
+                rationale="r",
+                remediation="rm",
+            )
+        ],
+    )
+    html = render_report(result, "html")
+    # No raw executable markup from the artifact survives into the report.
+    assert "<script" not in html
+    assert "<img" not in html
+    assert "<svg" not in html
+    # It is present, but escaped.
+    assert "&lt;script&gt;" in html
+
+
 def test_terminal_renders_without_error() -> None:
     console = Console(record=True, width=120)
     render_terminal(_result(), console=console)

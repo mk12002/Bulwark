@@ -14,10 +14,9 @@ Everything is byte-level inspection — no numpy/keras/onnx import, nothing exec
 from __future__ import annotations
 
 import ast
-import io
 import zipfile
 
-from bulwark_core.limits import DEFAULT_LIMITS, Limits
+from bulwark_core.limits import DEFAULT_LIMITS, Limits, read_bounded
 from bulwark_core.signals import SignalBundle
 
 from airlock.scanners.model.loader import ArtifactFile
@@ -82,13 +81,11 @@ def _emit_pickle(label: str, blob: bytes, bundle: SignalBundle, limits: Limits) 
 
 
 def _collect_numpy(file: ArtifactFile, bundle: SignalBundle, limits: Limits) -> None:
-    try:
-        raw = file.path.read_bytes()
-    except OSError:
-        return
     if file.suffix == ".npz":
+        # A .npz is a zip; open it from disk (streamed, seeks the central directory)
+        # rather than slurping it into memory, and cap each member.
         try:
-            with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+            with zipfile.ZipFile(file.path) as zf:
                 for idx, info in enumerate(zf.infolist()):
                     if (
                         idx >= limits.max_archive_members
@@ -100,6 +97,12 @@ def _collect_numpy(file: ArtifactFile, bundle: SignalBundle, limits: Limits) -> 
                         _emit_pickle(f"{file.relpath}::{info.filename}", blob, bundle, limits)
         except (zipfile.BadZipFile, OSError):
             return
+        return
+    # Raw .npy: bounded read — header + a capped slice of the payload is all we parse;
+    # never slurp a hostile multi-GB array whole.
+    try:
+        raw = read_bounded(file.path, limits.max_member_bytes + _MAX_HEADER)
+    except OSError:
         return
     blob = _parse_npy_object_pickle(raw, limits)
     if blob:
@@ -135,9 +138,15 @@ def _collect_keras(file: ArtifactFile, bundle: SignalBundle) -> None:
 def _collect_keras_zip(file: ArtifactFile, bundle: SignalBundle) -> None:
     try:
         with zipfile.ZipFile(file.path) as zf:
-            names = [n for n in zf.namelist() if n.endswith(".json")]
-            for name in names:
-                text = zf.read(name)[:_SCAN_BYTES].decode("utf-8", errors="replace")
+            for info in zf.infolist():
+                if not info.filename.endswith(".json"):
+                    continue
+                if info.file_size > DEFAULT_LIMITS.max_member_bytes:
+                    continue  # oversized member — skip (bomb guard)
+                name = info.filename
+                # Streamed, capped read — do not decompress a whole member into memory.
+                with zf.open(info) as fh:
+                    text = fh.read(_SCAN_BYTES).decode("utf-8", errors="replace")
                 if '"class_name": "Lambda"' in text or '"class_name":"Lambda"' in text:
                     bundle.add(
                         "model.keras_lambda",

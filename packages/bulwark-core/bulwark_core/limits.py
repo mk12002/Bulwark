@@ -11,9 +11,22 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 _MiB = 1024 * 1024
 _GiB = 1024 * _MiB
+
+
+def read_bounded(path: Path, limit: int) -> bytes:
+    """Read at most ``limit`` bytes from ``path``.
+
+    A scanner ingests hostile files; ``path.read_bytes()`` on a crafted multi-GB
+    artifact would OOM the process. Use this anywhere the whole file would otherwise
+    be slurped — content beyond ``limit`` cannot change a magic-byte or header-level
+    verdict.
+    """
+    with path.open("rb") as fh:
+        return fh.read(limit)
 
 
 @dataclass(frozen=True)

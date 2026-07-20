@@ -15,6 +15,7 @@ import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from bulwark_core.limits import DEFAULT_LIMITS, Limits
 from bulwark_core.rules import (
     LoadedRule,
     RuleLoadError,
@@ -68,15 +69,39 @@ def _fetch_zip(url: str) -> Path:
     return Path(_extract_zip(resp.content))
 
 
-def _extract_zip(data: bytes) -> str:
+def _extract_zip(data: bytes, limits: Limits = DEFAULT_LIMITS) -> str:
+    """Extract only ``.yaml`` rule packs from an untrusted zip, safely.
+
+    A rules feed is remote/untrusted input, so this defends against the usual zip
+    attacks: **zip-slip** (a member path resolving outside the temp dir — rejected by
+    a resolved-path containment check, which catches ``../`` *and* absolute/drive
+    paths that ``zf.extract`` or a naive substring check would miss), a **decompression
+    bomb** (per-member and total uncompressed-size caps), and **member floods** (a
+    member-count cap). Members are streamed to disk, never ``zf.extract``-ed.
+    """
     import tempfile
 
-    dest = tempfile.mkdtemp(prefix="airlock-rules-")
+    dest = Path(tempfile.mkdtemp(prefix="airlock-rules-"))
+    dest_resolved = dest.resolve()
+    total = 0
     with zipfile.ZipFile(io.BytesIO(data)) as zf:
-        for info in zf.infolist():
-            if info.filename.endswith(".yaml") and "/../" not in info.filename:
-                zf.extract(info, dest)
-    return dest
+        for idx, info in enumerate(zf.infolist()):
+            if idx >= limits.max_archive_members:
+                break
+            if info.is_dir() or not info.filename.lower().endswith(".yaml"):
+                continue
+            if info.file_size > limits.max_member_bytes:
+                continue  # oversized member — skip (bomb guard)
+            total += info.file_size
+            if total > limits.max_uncompressed_bytes:
+                break  # total uncompressed budget exceeded — stop
+            target = (dest / info.filename).resolve()
+            if not target.is_relative_to(dest_resolved):
+                continue  # zip-slip: member escapes the extraction dir — skip
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(info) as src, target.open("wb") as out:
+                shutil.copyfileobj(src, out, length=64 * 1024)
+    return str(dest)
 
 
 def update_rules(source: str, dest: Path, known_ids: set[str] | None = None) -> UpdateResult:

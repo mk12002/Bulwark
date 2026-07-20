@@ -18,6 +18,8 @@ manifest components ./project                          # list discovered compone
 manifest diff  ./v1 ./v2                               # AI-BOM drift between two versions
 ```
 
+![Manifest scanning a project — B-code governance findings with Airlock's model risk folded in via B5](docs/demo.svg)
+
 ## The whole suite in one command
 
 `manifest scan --scan-risk` is where Bulwark's thesis becomes literal — the inventory *plus* Airlock's

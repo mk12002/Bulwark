@@ -264,8 +264,20 @@ python packages/airlock/scripts/benchmark.py datasets/corpus.txt
 
 Early benchmark runs isolated each pickle by **copying it into a new sub-directory of the model's own
 folder** before scanning. Because those copies landed *inside* `datasets/corpus/`, each run's copies were
-picked up by the next run — recursively — silently inflating the real-model count across runs (18 → 72 →
-108 → …) and polluting the study's raw finding totals.
+picked up by the next run — recursively — silently inflating the real-model count and polluting the
+study's raw finding totals.
+
+Reproduced cleanly (revert the fix, run three times, nothing else changed):
+
+```text
+run 1: real-models (18 artifacts)
+run 2: real-models (36 artifacts)   # +18: one copy per real model
+run 3: real-models (54 artifacts)   # +18 again  → 54 nested _al_ dirs on disk
+```
+
+The count grows by one copy per real model every run. (Left uncontrolled over many runs it climbed
+well past 100 before the drift was even noticed — which is the danger: nobody watches a "0 false
+positives" line for its denominator to grow.)
 
 **Fix:** the benchmark now scans each file **in place** (the loader accepts a single file), so it never
 writes into the corpus. The per-model *percentages* were never affected (they're per-model booleans), but

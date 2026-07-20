@@ -11,6 +11,7 @@ regexes fail loudly at load time (surfaced by ``airlock rules lint``).
 
 from __future__ import annotations
 
+import functools
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -24,6 +25,17 @@ from bulwark_core.findings import Confidence, Finding, Location
 from bulwark_core.severity import Severity
 from bulwark_core.signals import Signal, SignalBundle
 from bulwark_core.taxonomy import is_known
+
+# Cap the length of the (attacker-controlled) string a rule regex is run against.
+# Detection patterns match short tokens; bounding the input keeps a pathological
+# regex — including one from an untrusted community rule pack — from turning a
+# multi-megabyte field into catastrophic backtracking (ReDoS) against the scanner.
+MAX_MATCH_INPUT = 100_000
+
+
+@functools.lru_cache(maxsize=512)
+def _compiled(pattern: str) -> re.Pattern[str]:
+    return re.compile(pattern)
 
 # --------------------------------------------------------------------------- #
 # Predicate registry — the only non-regex checks a rule may invoke.
@@ -244,11 +256,14 @@ def _iter_match_targets(value: Any) -> Iterable[Any]:
 def _evaluate(match: RuleMatch, value: Any) -> tuple[bool, Any]:
     """Return (matched, matched_value) for one signal value against a matcher."""
     if match.pattern is not None:
-        rx = re.compile(match.pattern)
+        rx = _compiled(match.pattern)
         for item in _iter_match_targets(value):
             if item is None:
                 continue
-            if rx.search(str(item)):
+            text = str(item)
+            if len(text) > MAX_MATCH_INPUT:
+                text = text[:MAX_MATCH_INPUT]  # bound ReDoS blast radius
+            if rx.search(text):
                 return True, item
         return False, None
     # predicate

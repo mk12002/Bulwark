@@ -16,6 +16,8 @@ warden import langchain_agent.py             # normalize any supported config â†
 warden rules list
 ```
 
+![Warden auditing an over-privileged agent â€” a CRITICAL attacker-triggerable exfiltration kill chain and the agency score](docs/demo.svg)
+
 ## The money shot: `--recommend`
 
 Point Warden at an over-privileged agent and it hands you a hardened version:

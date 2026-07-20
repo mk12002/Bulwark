@@ -163,6 +163,11 @@ Detection lives in **YAML rule packs**, not hardcoded — the community can exte
   import allowlist. Full methodology: [`docs/EMPIRICAL_VALIDATION.md`](docs/EMPIRICAL_VALIDATION.md).
 - **Reproducible research angle** — each tool ships a corpus/study harness for an empirical measurement
   of AI-supply-chain hygiene ("we scanned N public artifacts and X% were vulnerable").
+- **Hardened against its own inputs** — a scanner that ingests hostile files must not become the
+  attack. Bulwark inspects **statically** (never `pickle.load`/`torch.load`/imports repo code), caps
+  every parse (opcode/size/member/decompression-bomb limits, bounded reads), rejects zip-slip in the
+  rule feed, bounds regex input to blunt ReDoS, and HTML-escapes all report output (no scanner-report
+  XSS). See [`SECURITY.md`](SECURITY.md).
 - **Green everywhere** — 5 packages, 200+ tests, ruff + mypy + pytest all passing via one command
   (`python check.py`), matrixed in CI.
 

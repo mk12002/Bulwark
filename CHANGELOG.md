@@ -26,6 +26,22 @@ All notable changes to Bulwark are documented here. The format is based on
 - **OSS hygiene** — root `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue/PR
   templates, and a matrixed CI across all five packages.
 
+### Security (self-hardening — the scanner ingests hostile input)
+- **HTML report XSS fixed.** The report template (`report.html.j2`) fell through
+  `select_autoescape(["html"])` (its `.j2` suffix), so attacker-controlled strings from a scanned
+  artifact (finding evidence, file paths, MCP tool descriptions) rendered **unescaped** — opening a
+  report on a hostile artifact could execute injected `<script>`/`onerror`. Autoescape is now forced on.
+- **Rule-feed zip extraction hardened.** `rule_feed._extract_zip` replaced a weak `"/../"` substring
+  check with a resolved-path containment guard (defeats `../` *and* absolute/drive zip-slip), and added
+  per-member, total-uncompressed, and member-count caps (decompression-bomb / member-flood guards);
+  members are streamed, never `zf.extract`-ed.
+- **Bounded reads.** Whole-file `read_bytes()` on artifacts (numpy `.npy`, GGUF magic check, compressed
+  pickles, Keras zip members) replaced with capped reads via `bulwark_core.limits.read_bounded`, so a
+  crafted multi-GB file can't OOM the scanner.
+- **ReDoS blast-radius bound.** Rule-engine regexes now run against a length-capped input
+  (`MAX_MATCH_INPUT`) and use a compiled-pattern cache, limiting catastrophic backtracking from a
+  hostile field or an untrusted community rule pack.
+
 ### Fixed
 - Benchmark harness no longer copies scan artifacts into the corpus directory (an earlier version
   silently inflated repeated runs); it now scans each file in place.

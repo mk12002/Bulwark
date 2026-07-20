@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import BinaryIO
 
-from bulwark_core.limits import DEFAULT_LIMITS, Limits
+from bulwark_core.limits import DEFAULT_LIMITS, Limits, read_bounded
 from bulwark_core.signals import SignalBundle
 
 from airlock.scanners.model.loader import ArtifactFile
@@ -232,7 +232,9 @@ def _decompress(head: bytes, path: Path, limits: Limits) -> bytes | None:
     else:
         return None
     try:
-        raw = path.read_bytes()
+        # Bound the *compressed* read too: a multi-GB compressed pickle would OOM on
+        # a full read before we ever bound the decompressed output.
+        raw = read_bounded(path, limits.max_member_bytes)
         return zlib.decompressobj(wbits).decompress(raw, limits.max_member_bytes)
     except (OSError, zlib.error):
         return None
