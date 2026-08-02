@@ -179,15 +179,32 @@ class AgentSpec(BaseModel):
     autonomy: Literal["manual","assisted","autonomous"] = "assisted"
 ```
 
-`normalize.py` maps raw tool names/scopes/descriptions to `Capability` sets using a rule-backed
-lexicon (extensible YAML), so classification improves via PRs, not code edits.
+`normalize.py` maps raw tool names/scopes/descriptions to `Capability` sets using a keyword lexicon,
+so classification improves by adding patterns rather than editing logic. (The lexicon is currently a
+Python dict; moving it to a YAML pack loaded like the rule packs — so it can ship through the
+community feed and be extended per project — is tracked as future work.)
+
+Two patterns were narrowed after they proved noisy in practice, and the reasoning generalises:
+`\bformat\b` classified `format_response` as `DESTRUCTIVE` (hence high-impact, hence a spurious
+missing-gate finding and +10 agency score on a text formatter), and `\bsandbox\b` classified
+"runs in a sandbox" as `CODE_EXEC` — inverted, since the word usually appears because the author is
+*reassuring* you. Both now require corroborating context. **A capability pattern should require a
+verb *and* a domain noun**, or it will fire on ordinary documentation.
 
 ---
 
 ## 5. Capability graph & the agency score
 
 - **Graph:** nodes = tools, data sources, and external sinks; edges = "can supply data to" / "can act
-  on". A *sensitive source* → *egress sink* reachable path is a toxic combination (A2/A5).
+  on". A *sensitive source* → *egress sink* reachable path is a toxic combination (A2/A5). Within a
+  single agent every tool is reachable from every other — the agent can call them in sequence and no
+  privilege boundary separates them — so the "graph" is correctly a cross-product rather than a
+  search. Pairings are capped at `MAX_PAIRS` with a roll-up finding naming the total, so a large
+  tool-set produces a readable report instead of hundreds of near-duplicates.
+- **A5 egress:** a network-out tool counts as constrained when its scope names something concrete —
+  an allow-list, a URL prefix, a hostname, or a CIDR. Matching only the literal word `allowlist`
+  previously reported `https://api.example.com/**` as unrestricted, a false positive on exactly the
+  configuration the finding asks the user to adopt.
 - **Agency score (0–100):** a transparent weighted sum over breadth of capabilities, count of
   high-impact tools, ungated high-impact actions, exfil paths, and missing limits. Documented formula
   (no black box). Displayed in the report header; great demo headline ("Agency score: 82/100 — HIGH").
@@ -206,6 +223,13 @@ lexicon (extensible YAML), so classification improves via PRs, not code edits.
 - Allow-list egress instead of open `net_out` (A5).
 
 Output: `warden audit ... --recommend` prints before/after and can write a `agentspec.hardened.yaml`.
+
+The split between **applied changes** and **advisories** is the design: mechanical hardening that
+preserves intent is applied (gates, sandboxes, an allow-list *placeholder*, runaway limits), while
+anything that changes what the agent *does* — breaking a toxic pair, restricting egress — is raised
+for a human decision and never silently rewritten. A "hardened" spec that no longer performs its job
+is worse than none. A property test asserts that the recommendation measurably lowers the agency
+score, so the recommender and the analyzer cannot drift apart while encoding the same threat model.
 
 ---
 

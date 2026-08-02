@@ -11,7 +11,7 @@ import hashlib
 import json
 
 from bulwark_core import __version__
-from bulwark_core.findings import Finding, ScanResult
+from bulwark_core.findings import Finding, ScanResult, finding_key
 from bulwark_core.severity import Severity
 from bulwark_core.taxonomy import category_info, is_known
 
@@ -70,8 +70,13 @@ def _precision(confidence: str) -> str:
 
 
 def _fingerprint(f: Finding) -> str:
-    """A stable hash of the finding identity for cross-run de-duplication."""
-    basis = "|".join([f.id, f.location.path or "", f.location.detail or "", f.evidence])
+    """A stable hash of the finding identity for cross-run de-duplication.
+
+    Derived from the canonical :func:`~bulwark_core.findings.finding_key` so the
+    SARIF fingerprint, in-scan dedup, and baseline matching can never drift apart —
+    a drift here silently resurrects every alert a reviewer had dismissed.
+    """
+    basis = "|".join(part or "" for part in finding_key(f))
     return hashlib.sha256(basis.encode("utf-8")).hexdigest()
 
 

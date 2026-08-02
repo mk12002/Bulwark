@@ -87,10 +87,17 @@ artifacts**, **MCP servers**, and **agent tool-specs**.
 ```bash
 airlock scan model ./path/to/model           # a local dir or file
 airlock scan model hf:org/name               # fetch from the HuggingFace Hub (public repos, no key)
+airlock scan model hf:org/name@a1b2c3d       # PIN to an immutable revision (reproducible scan)
 airlock scan model model.bin --format json --fail-on high
 airlock scan model ./m --baseline prev.json  # report only findings NEW since prev.json
 airlock scan model ./m --strict              # allowlist mode: flag imports outside the ML allowlist
 ```
+
+**Pin your `hf:` targets.** Without `@revision` a Hub reference resolves against a mutable git
+branch — the publisher can force-push and change the weights under you, so the scan is neither
+reproducible nor attributable to specific bytes. Unlike a PyPI version, which cannot be republished,
+a Hub branch can be rewritten at any time. This is why an unpinned model is a materially stronger
+finding than an unpinned package.
 
 Formats understood: pickle (`.bin`/`.pt`/`.ckpt`/`.pkl`/joblib/dill) · safetensors · GGUF · ONNX ·
 Keras (`.h5`/`.keras`) · numpy (`.npy`/`.npz`) · TensorFlow SavedModel (`.pb`) · Flax msgpack · PMML ·
@@ -113,6 +120,14 @@ airlock scan mcp "python server.py"          # a stdio command
 airlock scan mcp "npx -y @scope/mcp-server"  # any stdio launcher
 airlock scan mcp https://host/sse            # an SSE/HTTP endpoint
 ```
+
+> ⚠️ **Scanning a stdio server starts it.** The protocol has no way to list a stdio server's tools
+> without running it, so the server's own startup code executes with your privileges. Airlock never
+> *invokes* a tool — there is no `tools/call` anywhere in the codebase — but it cannot prevent module
+> import. Scan untrusted servers in a container or VM, or prefer the fully static
+> `airlock scan toolspec` path (§4.3), which spawns nothing. The CLI prints this warning on the stdio
+> path. Enumeration is bounded by `AIRLOCK_LIMIT_CONNECT_TIMEOUT` (default 20s), so an unresponsive
+> server cannot hang a scan.
 
 Finds **P1–P9**: tool poisoning, injection via output, hidden/obfuscated unicode, over-permissioned
 tools, cross-tool exfiltration paths, secret leakage, rug-pull/TOFU, transport/auth, shadowing.
@@ -139,9 +154,24 @@ category/severity histograms, and top rules with reproducibility metadata.
 airlock rules list                           # all 42 rules
 airlock rules show M1-shell-exec-callable     # one rule's detail
 airlock rules stats                           # by target/category/severity
-airlock rules lint                            # validate rule packs
+airlock rules lint                            # validate packs: schema, categories, AND signal names
 airlock rules update --from <feed>            # install validated community rule packs
+
+airlock rules debug model ./m                 # dump the signal bundle, no rules applied
+airlock rules debug mcp "python server.py" --signal tool.
+airlock rules debug toolspec tools.json
 ```
+
+**`rules lint` validates signal names.** Every other class of rule error fails loudly at load — an
+unregistered category, an unknown predicate, an invalid regex, a duplicate id. A mistyped
+`match.signal` was the one that failed *silently*: no rule matched, nothing errored, and the
+detection was simply absent. Each tool now declares the signals its analyzers emit, and lint rejects
+a rule referencing anything outside that set. `warden rules lint` and `manifest rules lint` do the
+same.
+
+**`rules debug` is the first move when a rule stops firing.** It prints every signal the analyzers
+produced for a target without applying any rules, so you can immediately tell whether the *evidence*
+is missing or whether the rule's `match.signal` simply does not match what was emitted.
 
 ---
 
@@ -270,14 +300,77 @@ output is tagged `source="ai"`.
 
 Two switches are required: `[ai].enabled = true` in config **and** the `--ai` flag. Default provider is
 a **local Ollama** server (no key, no egress). OpenAI-compatible and Anthropic providers are supported;
-keys are read only from env (e.g. `AIRLOCK_AI_API_KEY`), never from disk.
+keys are read only from env (e.g. `AIRLOCK_AI_API_KEY`), never from disk — `AIConfig` deliberately has
+no `api_key` field, so there is nowhere in a file to put one.
 
 ```bash
+# airlock.toml
+[ai]
+enabled = true
+provider = "ollama"
+max_findings_to_enrich = 25
+
 export AIRLOCK_AI_API_KEY=...                  # only for openai_compat / anthropic
 airlock scan mcp "python server.py" --ai
 ```
 
-If AI is unreachable, the scan degrades gracefully to deterministic-only with a warning.
+`max_findings_to_enrich` bounds **every** provider call — semantic recall, per-finding triage, the
+executive summary, and the model-card read all draw on one counter, so the documented cap is the real
+cap. If AI is unreachable, the scan degrades gracefully to deterministic-only with a warning.
+
+**Injection against the analyzer.** The text sent to the provider comes from the artifact being
+scanned, so it is attacker-controlled by definition. It is fenced in `<untrusted_content>` markers
+(forged markers are stripped) and the system prompt states the fence marks data. That removes the
+cheapest version of the attack; the layer's blast radius is bounded regardless, because AI can add a
+finding tagged `source="ai"` or annotate one, but can never remove, downgrade, or gate a
+deterministic finding.
+
+---
+
+## 8a. Configuration
+
+Precedence, highest first: **command-line flags → environment variables → the TOML file → defaults.**
+
+Environment beats the file deliberately: env is the operator's channel (CI, containers), while a
+committed config file may be controlled by the very repository being scanned and must never be able
+to weaken a pipeline's settings.
+
+Each tool reads its own file from the working directory — `airlock.toml`, `warden.toml`,
+`manifest.toml` — and each has its own env prefix. Nested keys use a double underscore.
+
+```toml
+# airlock.toml
+fail_on = "high"
+output_format = "terminal"
+strict_allowlist = false
+suppress_rules = ["M4-*", "M7-*"]     # waive advisory families
+suppress_paths = ["tests/*"]
+
+[ai]
+enabled = false
+provider = "ollama"
+base_url = "http://localhost:11434"
+```
+
+```bash
+AIRLOCK_FAIL_ON=critical airlock scan model ./m     # env overrides the file
+AIRLOCK_AI__ENABLED=true airlock scan mcp "..." --ai  # nested key: double underscore
+WARDEN_PROFILE=permissive warden audit agent.yaml
+```
+
+**Resource limits** are environment-only and bound every parse (see §11):
+
+| Variable | Default | Bounds |
+| --- | --- | --- |
+| `AIRLOCK_LIMIT_PICKLE_OPCODES` | 2,000,000 | pickle opcode flood |
+| `AIRLOCK_LIMIT_ARCHIVE_MEMBERS` | 20,000 | archive member flood |
+| `AIRLOCK_LIMIT_UNCOMPRESSED_BYTES` | 4 GiB | zip bomb (absolute) |
+| `AIRLOCK_LIMIT_COMPRESSION_RATIO` | 100.0 | zip bomb (ratio) |
+| `AIRLOCK_LIMIT_MEMBER_BYTES` | 512 MiB | per-member parse |
+| `AIRLOCK_LIMIT_NESTED_BLOB_BYTES` | 8 MiB | base64 expansion |
+| `AIRLOCK_LIMIT_MAX_FILES` | 100,000 | files enumerated in a target tree |
+| `AIRLOCK_LIMIT_CONNECT_TIMEOUT` | 20.0 | seconds for a live MCP scan |
+| `AIRLOCK_STATE_DIR` | `~/.airlock` | rug-pull baseline store (set it in CI) |
 
 ---
 
@@ -318,3 +411,22 @@ Bulwark is a **defensive** project. It *detects and reports* risk; it never exec
 scans — no `pickle.load`, no `torch.load`, no importing repo code, no invoking MCP tools; models are
 inspected via static opcode disassembly, configs via static parsing. Every test fixture that simulates
 a malicious artifact uses **benign, inert markers** only (e.g. an `echo` of a sentinel string).
+
+A scanner that ingests hostile files must not become the attack, so the controls are layered:
+
+| Layer | Control |
+| --- | --- |
+| **Never execute** | `pickletools.genops` not `pickle.load`; `ast.literal_eval` not `eval`; `yaml.safe_load` not `yaml.load`; configs parsed as data; LangChain files regex-parsed, never imported; `tools/list` only, never `tools/call` |
+| **Never extract** | archives are analysed from the central directory; the rule feed is the one writer, with resolved-path containment, a `.yaml` allowlist, size caps, and streamed copies |
+| **Bound everything** | opcodes, archive members, compression ratio, per-member and total size, nested blobs, regex input, evidence length, **files walked**, and **connection time** — all named limits with `AIRLOCK_LIMIT_*` overrides |
+| **Contain traversal** | directory walks resolve each entry and require it to stay under the scan root, so a symlink to `/` cannot turn a scan into a filesystem traversal |
+| **Fail safe** | every parser catches its errors and records them; a malformed artifact yields a partial result, never a crash — a crash-on-malformed-input scanner is itself a DoS vector |
+| **Output safety** | HTML autoescape is *forced* on (the `.j2` suffix would slip past `select_autoescape`), evidence is truncated, BOM output is ASCII-safe |
+| **Data handling** | API keys from env only; no ambient Hub credentials; offline by default; AI off by default and local-first when on |
+
+Two invariants are enforced by tests rather than by discipline: `bulwark-core` imports nothing from
+the tools, and core never calls an execution primitive. See
+`packages/bulwark-core/tests/test_architecture.py`.
+
+Report a vulnerability — including a **scanner evasion**, which for a detection tool is a genuine
+vulnerability — via [`SECURITY.md`](../SECURITY.md).

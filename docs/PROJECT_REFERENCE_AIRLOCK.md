@@ -264,7 +264,12 @@ loudly at load time (surfaced by `airlock rules lint`).
 
 ## 6. Model scanner — detailed logic
 
-- **loader.py** — resolve `hf:org/name` via `huggingface_hub` (list + download only the files needed:
+- **loader.py** — resolve `hf:org/name` or `hf:org/name@revision` via `huggingface_hub`. A bare repo
+  id resolves against a *mutable* git branch, so the publisher can force-push and change the weights
+  under you; `@revision` pins an immutable commit and makes the scan reproducible and attributable to
+  specific bytes. Directory walks go through `bulwark_core.limits.walk_files`, which resolves each
+  entry and requires it to stay under the scan root (a symlink to `/` must not turn a scan into a
+  filesystem traversal) and stops at `max_files`. Downloads fetch only the files needed:
   `*.json`, `*.bin`/`*.pt`/`*.ckpt`/`*.pkl`/`*.safetensors`, `*.gguf`, `*.pb`, `*.msgpack`, `*.pmml`,
   `*.py`), or accept a local dir/file. Emit an inventory of files with sizes/formats. Formats
   understood span pickle-family, safetensors, GGUF/GGML, ONNX, Keras (`.h5`/`.keras`), numpy
@@ -303,7 +308,11 @@ from being an execution vector itself.
 
 - **client.py** — connect via the `mcp` SDK over stdio (spawn a command) or SSE/HTTP (URL). List
   tools, resources, prompts. Capture raw JSON schemas and descriptions verbatim. Record transport +
-  auth used. Emit `tool.*`, `resource.*`, `transport.*`, `auth.*` signals.
+  auth used — for a remote target, `auth_present` reflects credentials actually supplied (URL
+  userinfo, an auth query parameter, or an `MCP_*` token env var) rather than being a synonym for
+  "is remote". Enumeration runs under `anyio.fail_after(Limits.connect_timeout_s)`, so a server that
+  connects and never answers `initialize` cannot hang the scan; a timeout is recorded as a connect
+  error like any other. Emit `tool.*`, `resource.*`, `transport.*`, `auth.*` signals.
 - **descriptions.py** — run injection/poisoning heuristics (P1/P2) and unicode/hidden-content
   analysis (P3) over names + descriptions + parameter docs. Emit `tool.description`,
   `tool.hidden_chars`.
@@ -315,6 +324,12 @@ from being an execution vector itself.
 
 **Safety:** Airlock only *reads* tool metadata. It does not *invoke* server tools during a scan
 (invoking untrusted tools is itself dangerous). Any dynamic probing is opt-in and clearly gated.
+
+**The one honest exception:** enumerating a *stdio* server requires spawning it — the protocol offers
+no other way to list its tools — so the server's own module-level code runs with the user's
+privileges. Airlock guarantees no tool is called; it cannot prevent import. The CLI warns on this
+path and points at `airlock scan toolspec`, which parses a declared tool-definition file and runs the
+same P1–P9 rules with nothing spawned. Prefer the static path in CI.
 
 ---
 
@@ -383,12 +398,26 @@ provider = "ollama"                 # ollama | openai_compat | anthropic
 model    = "qwen2.5-coder"
 base_url = "http://localhost:11434" # for ollama / openai_compat
 # api_key read from env: AIRLOCK_AI_API_KEY  (never store keys in the file)
-max_findings_to_enrich = 25         # cap calls → cap cost
+max_findings_to_enrich = 25         # cap ALL provider calls → cap cost
 ```
 
-Rules of engagement enforced in code: AI runs **only** when `enabled AND --ai`; it enriches at most
-`max_findings_to_enrich` findings; on any provider error it degrades gracefully to
-deterministic-only output with a warning. Keys come from env, never from disk.
+Configuration layers **environment over TOML file over defaults** via `BulwarkSettings` in
+`bulwark_core.config`. Env wins deliberately: it is the operator's channel, while a committed config
+file may be controlled by the repository being scanned and must never weaken a pipeline. `AIConfig`
+has no `api_key` field at all, so a key has nowhere to live on disk.
+
+Rules of engagement enforced in code: AI runs **only** when `enabled AND --ai`;
+`max_findings_to_enrich` bounds *every* provider call — semantic recall, triage, the executive
+summary, and the model-card read share one counter, so the documented cap is the real cap; on any
+provider error it degrades gracefully to deterministic-only output with a warning.
+
+**Injection against the analyzer.** The text handed to a provider comes from the artifact being
+scanned and is attacker-controlled by definition. It is fenced in `<untrusted_content>` markers
+(forged markers stripped) and the system prompt states that the fence marks data — content inside it
+demanding a particular verdict is treated as evidence of manipulation, not as an instruction. This
+does not *solve* injection; nothing does. The layer's blast radius is bounded independently, because
+AI can add a `source="ai"` finding or attach an `ai_assessment`, but no code path removes,
+downgrades, or gates a deterministic finding.
 
 ### 9.4 Example enrichment prompt (semantic tool-description check)
 
@@ -430,12 +459,27 @@ The `ai/` package implements the above with these concrete decisions:
 ## 10. CLI reference (target)
 
 ```
-airlock scan model <hf:org/name | path> [--format terminal|json|html|sarif] [--fail-on SEV] [--ai]
-airlock scan mcp   <command | url>       [--format ...] [--fail-on SEV] [--ai]
+airlock scan model <hf:org/name[@revision] | path>
+                                          [--format terminal|json|html|sarif] [--fail-on SEV]
+                                          [--baseline PATH] [--strict] [--ai] [--quiet]
+airlock scan mcp      <command | url>     [--format ...] [--fail-on SEV] [--ai] [--quiet]
+airlock scan toolspec <file.json|yaml>    [--format ...] [--fail-on SEV] [--ai] [--quiet]
+
 airlock rules list                        # show loaded rule packs
-airlock rules lint                        # validate rule packs
+airlock rules show <rule-id>              # one rule in full
+airlock rules stats                       # by target / category / severity
+airlock rules lint                        # validate schema, categories, AND signal names
+airlock rules debug <model|mcp|toolspec> <target> [--signal SUBSTR]
+                                          # dump the signal bundle, no rules applied
+airlock rules update --from <dir|zip|url> [--dir DEST]
+airlock study <corpus.txt> [--format markdown] [--out FILE]
 airlock version
 ```
+
+`rules lint` cross-checks every rule's `match.signal` against the signals Airlock's analyzers
+actually emit (`airlock.rules.KNOWN_SIGNALS`). A mistyped signal name was previously the one rule
+error that failed *silently* — no match, no error, detection simply gone. `rules debug` answers the
+companion question when a rule stops firing: does the evidence exist at all?
 
 ---
 

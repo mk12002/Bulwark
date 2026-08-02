@@ -26,6 +26,9 @@ _CDX_TYPE: dict[ComponentType, str] = {
 }
 
 _PURL_ECOSYSTEM = {"pypi": "pypi", "npm": "npm"}
+# Hugging Face repos have a registered purl type, so models and datasets can be
+# identified across tools and matched by advisory feeds the same way packages are.
+_HF_PREFIXES = {"hf:": "huggingface", "hf-dataset:": "huggingface"}
 
 
 def _serial(bom: AIBOM) -> str:
@@ -35,11 +38,26 @@ def _serial(bom: AIBOM) -> str:
 
 
 def _purl(component: Component) -> str | None:
+    """A package URL for the component, when its ecosystem is identifiable.
+
+    purl is what makes a component comparable *across* tools — two scanners emitting
+    ``pkg:pypi/requests@2.31.0`` are talking about the same thing with no negotiation,
+    and advisory databases key on it. Models get ``pkg:huggingface/org/name@revision``
+    so a BOM consumer can identify them too, not only libraries.
+    """
     src = component.provenance.source or ""
+    ver = component.provenance.version
     for prefix, eco in _PURL_ECOSYSTEM.items():
         if src == prefix:
-            ver = component.provenance.version
             return f"pkg:{eco}/{component.name}" + (f"@{ver}" if ver else "")
+    for prefix, eco in _HF_PREFIXES.items():
+        if src.startswith(prefix):
+            repo = src[len(prefix) :].strip("/")
+            if not repo:
+                return None
+            # The revision, when pinned, is the immutable identifier worth carrying.
+            rev = ver or component.provenance.hash
+            return f"pkg:{eco}/{repo}" + (f"@{rev}" if rev else "")
     return None
 
 

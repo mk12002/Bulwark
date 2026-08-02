@@ -41,6 +41,43 @@ class Limits:
     max_nested_blob_bytes: int = 8 * _MiB  # cap on a decoded nested (base64) payload
     max_strings: int = 200  # embedded strings retained per stream
     max_string_len: int = 400  # per-string truncation
+    max_files: int = 100_000  # files enumerated when walking a target directory
+    connect_timeout_s: float = 20.0  # per-connection budget for a live MCP scan
+
+
+def walk_files(root: Path, limits: Limits | None = None) -> list[Path]:
+    """Enumerate files under ``root``, bounded and without escaping via symlinks.
+
+    ``Path.rglob`` follows symbolic links, so a hostile artifact directory containing
+    a link to ``/`` would make a scan traverse the entire filesystem — a
+    denial-of-service in a tool that otherwise bounds every parse. Two controls:
+
+    - **containment** — each entry is resolved and must remain under the resolved
+      root, which rejects escaping symlinks the same way the rule feed rejects
+      zip-slip (``..`` *and* absolute/drive paths);
+    - **a file cap** — ``max_files``, overridable via ``AIRLOCK_LIMIT_MAX_FILES``.
+
+    Results are sorted for deterministic, reproducible output across machines.
+    """
+    lim = limits or DEFAULT_LIMITS
+    try:
+        root_resolved = root.resolve()
+    except OSError:
+        return []
+
+    out: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        if len(out) >= lim.max_files:
+            break
+        try:
+            if not path.is_file():
+                continue
+            if not path.resolve().is_relative_to(root_resolved):
+                continue  # symlink escaping the scan root — skip
+        except OSError:  # broken link, permission error, path too long
+            continue
+        out.append(path)
+    return out
 
 
 def _env_int(name: str, default: int) -> int:
@@ -79,8 +116,10 @@ def from_env() -> Limits:
         max_nested_blob_bytes=_env_int(
             "AIRLOCK_LIMIT_NESTED_BLOB_BYTES", base.max_nested_blob_bytes
         ),
-        max_strings=base.max_strings,
-        max_string_len=base.max_string_len,
+        max_strings=_env_int("AIRLOCK_LIMIT_STRINGS", base.max_strings),
+        max_string_len=_env_int("AIRLOCK_LIMIT_STRING_LEN", base.max_string_len),
+        max_files=_env_int("AIRLOCK_LIMIT_MAX_FILES", base.max_files),
+        connect_timeout_s=_env_float("AIRLOCK_LIMIT_CONNECT_TIMEOUT", base.connect_timeout_s),
     )
 
 

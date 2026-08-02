@@ -14,7 +14,7 @@ rules:
       no confirmation/approval, so a hijacked agent executes them unchecked.
     remediation: >-
       Require a confirm/approval gate before the tool acts.
-    references: ["OWASP:LLM06"]
+    references: ["OWASP:LLM06:2025"]
 
   - id: A8-unsandboxed-exec
     category: A8
@@ -44,4 +44,4 @@ rules:
       into unbounded cost or destructive loops.
     remediation: >-
       Set max_iterations, a budget, and a timeout.
-    references: ["OWASP:LLM06"]
+    references: ["OWASP:LLM06:2025"]

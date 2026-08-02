@@ -73,15 +73,39 @@ class AIBOM(BaseModel):
         return next((c for c in self.components if c.key == key), None)
 
     def add(self, component: Component) -> Component:
-        """Add a component, merging into an existing one with the same key."""
+        """Add a component, merging into an existing one with the same key.
+
+        Merges field-wise, preferring whichever side actually has a value, so a
+        discoverer that runs later with richer provenance does not lose it. Two
+        discoverers finding the same component is the normal case (a model named in
+        both a ``.py`` file and a notebook), and the merge must be additive rather
+        than first-writer-wins.
+        """
         existing = self.get(component.key)
         if existing is None:
             self.components.append(component)
             return component
-        # Merge: prefer richer provenance/license, union findings/metadata.
+
         if not existing.location:
             existing.location = component.location
         existing.metadata.update(component.metadata)
+
+        # Provenance: fill any field the existing component lacks.
+        for attr in ("source", "author", "version", "hash"):
+            if getattr(existing.provenance, attr) is None:
+                setattr(existing.provenance, attr, getattr(component.provenance, attr))
+        existing.provenance.pinned = existing.provenance.pinned or component.provenance.pinned
+
+        # License: a concrete identifier beats an unknown one.
+        if existing.license.id is None and component.license.id is not None:
+            existing.license = component.license
+        elif existing.license.risk == "unknown" and component.license.risk != "unknown":
+            existing.license.risk = component.license.risk
+
+        # Findings are a union, order-preserving.
+        for fid in component.findings:
+            if fid not in existing.findings:
+                existing.findings.append(fid)
         return existing
 
     def type_counts(self) -> dict[str, int]:

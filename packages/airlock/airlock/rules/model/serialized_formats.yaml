@@ -15,7 +15,7 @@ rules:
     remediation: >-
       Do not load with Lambda layers from an untrusted source. Rebuild the model
       without Lambda layers, or load only after auditing the embedded code.
-    references: ["OWASP:LLM05", "CWE-502"]
+    references: ["OWASP:LLM03:2025", "CWE-502"]
 
   - id: M5-onnx-custom-python-op
     category: M5
@@ -30,7 +30,7 @@ rules:
       arbitrary Python during inference.
     remediation: >-
       Do not run ONNX models with custom Python operators from an untrusted source.
-    references: ["OWASP:LLM05", "CWE-502"]
+    references: ["OWASP:LLM03:2025", "CWE-502"]
 
   - id: M6-onnx-external-data-traversal
     category: M6
@@ -60,7 +60,7 @@ rules:
       embedded in the graph when the model is loaded or executed.
     remediation: >-
       Do not load untrusted graphs with PyFunc ops; rebuild the graph without them.
-    references: ["OWASP:LLM05", "CWE-502"]
+    references: ["OWASP:LLM03:2025", "CWE-502"]
 
   - id: M6-tensorflow-io-op
     category: M6
@@ -93,4 +93,4 @@ rules:
     remediation: >-
       Reject the file. A model weight file must match its declared format; a pickle
       masquerading as safetensors/GGUF/etc. is almost always malicious.
-    references: ["OWASP:LLM05", "CWE-646", "CWE-502"]
+    references: ["OWASP:LLM03:2025", "CWE-646", "CWE-502"]

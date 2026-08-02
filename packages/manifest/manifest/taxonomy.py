@@ -39,7 +39,7 @@ _CATEGORIES: list[CategoryInfo] = [
         title="Undeclared / unpinned component",
         description="A model/dataset/dependency used without a pinned version or hash.",
         default_severity=Severity.MEDIUM,
-        references=("SLSA", "supply-chain-hygiene"),
+        references=("SLSA", "SLSA"),
     ),
     CategoryInfo(
         code="B2",
@@ -57,7 +57,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "A restrictive, incompatible, or unknown license on a model, dataset, or dependency."
         ),
         default_severity=Severity.MEDIUM,
-        references=("license-compliance",),
+        references=("SPDX-License-List",),
     ),
     CategoryInfo(
         code="B4",
@@ -76,7 +76,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "the component."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM05", "OWASP:LLM06"),
+        references=("OWASP:LLM03:2025", "OWASP:LLM06:2025"),
     ),
     CategoryInfo(
         code="B6",
@@ -84,7 +84,7 @@ _CATEGORIES: list[CategoryInfo] = [
         title="Dataset governance gap",
         description="A dataset without documented source, license, or consent.",
         default_severity=Severity.MEDIUM,
-        references=("NIST-AI-RMF", "data-governance"),
+        references=("NIST-AI-RMF", "EU-AI-Act-Art10"),
     ),
     CategoryInfo(
         code="B7",
@@ -100,7 +100,7 @@ _CATEGORIES: list[CategoryInfo] = [
         title="Unversioned / untracked prompt template",
         description="System/prompt templates lacking identifiers or version control.",
         default_severity=Severity.LOW,
-        references=("governance-best-practice",),
+        references=("NIST-AI-RMF",),
     ),
     CategoryInfo(
         code="B9",

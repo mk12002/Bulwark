@@ -28,7 +28,11 @@ _OK = {
     "cc0-1.0",
     "mpl-2.0",
 }
-_COPYLEFT = {"gpl", "gpl-2.0", "gpl-3.0", "agpl", "agpl-3.0", "lgpl"}
+# AGPL is checked before the general copyleft set: its obligations trigger on
+# *network* interaction, so for a hosted product it is frequently the highest-
+# consequence licence in the tree — folding it in with GPL loses that distinction.
+_NETWORK_COPYLEFT = {"agpl", "agpl-3.0", "agpl-3.0-only", "agpl-3.0-or-later"}
+_COPYLEFT = {"gpl", "gpl-2.0", "gpl-3.0", "lgpl"}
 _RESTRICTED = {
     "cc-by-nc-4.0",
     "cc-by-nc",
@@ -47,9 +51,20 @@ _LICENSE_FIELD = re.compile(r'(?i)"?license"?\s*[:=]\s*"?([A-Za-z0-9.\-_ ]+)')
 
 
 def classify(identifier: str) -> tuple[str, LicenseRisk]:
+    """Map a licence identifier to a risk class, most-restrictive-first.
+
+    Order is the policy: an ambiguous identifier gets the safer classification.
+    AGPL is matched before general copyleft so a network-copyleft obligation is not
+    silently reported as ordinary copyleft.
+    """
     key = identifier.strip().lower()
     for token in _RESTRICTED:
         if token in key:
+            return identifier.strip(), "restricted"
+    for token in _NETWORK_COPYLEFT:
+        if key == token or key.startswith(token):
+            # Network copyleft is the strongest reciprocal obligation a hosted
+            # product can inherit; surface it as restricted, not merely copyleft.
             return identifier.strip(), "restricted"
     for token in _COPYLEFT:
         if key == token or key.startswith(token):

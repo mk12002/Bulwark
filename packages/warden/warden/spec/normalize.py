@@ -27,7 +27,11 @@ _LEXICON: dict[Capability, list[str]] = {
         r"\beval\b",
         r"run_(code|python|script)",
         r"code[_ ]?interpreter",
-        r"\bsandbox\b",
+        # "sandbox" alone is not evidence of execution — it most often appears
+        # because the author is *reassuring* you the tool is sandboxed. Require it
+        # next to an execution verb.
+        r"\bsandbox(ed|ing)?\b[^.]{0,40}\b(run|exec(ute)?|code|script|python)\b",
+        r"\b(run|exec(ute)?|code|script|python)\b[^.]{0,40}\bsandbox(ed|ing)?\b",
     ],
     Capability.FS_WRITE: [
         r"write[_ ]?file",
@@ -112,7 +116,11 @@ _LEXICON: dict[Capability, list[str]] = {
         r"\bdrop\b",
         r"\bwipe\b",
         r"\bdestroy\b",
-        r"\bformat\b",
+        # "format" means "format a disk", not "format a string/response/date".
+        # Bare \bformat\b was the noisiest pattern in the lexicon: it classified
+        # `format_response` as DESTRUCTIVE, which is HIGH_IMPACT, which produced a
+        # spurious A3 missing-gate finding and +10 agency score on a text formatter.
+        r"\bformat(ting|ted)?\b[^.]{0,30}\b(disk|drive|volume|partition|filesystem|device)\b",
         r"\brm\b",
         r"terminate",
     ],

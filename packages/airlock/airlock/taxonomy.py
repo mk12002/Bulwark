@@ -58,7 +58,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "VM can call arbitrary callables."
         ),
         default_severity=Severity.CRITICAL,
-        references=("OWASP:LLM05", "CWE-502"),
+        references=("OWASP:LLM03:2025", "CWE-502"),
     ),
     CategoryInfo(
         code="M2",
@@ -80,7 +80,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "base64/marshal blobs, or dynamic import inside the artifact."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM05",),
+        references=("OWASP:LLM03:2025",),
     ),
     CategoryInfo(
         code="M4",
@@ -90,7 +90,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "Model ships as pickle when a memory-safe format (safetensors) exists. Advisory."
         ),
         default_severity=Severity.MEDIUM,
-        references=("best-practice",),
+        references=("safetensors", "CWE-502",),
     ),
     CategoryInfo(
         code="M5",
@@ -101,7 +101,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "modeling_*.py / configuration_*.py, causing the framework to import repo Python."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM05", "CWE-494"),
+        references=("OWASP:LLM03:2025", "CWE-494"),
     ),
     CategoryInfo(
         code="M6",
@@ -123,7 +123,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "author. The precondition for supply-chain compromise. Advisory."
         ),
         default_severity=Severity.LOW,
-        references=("OWASP:LLM05", "SLSA"),
+        references=("OWASP:LLM03:2025", "SLSA"),
     ),
     CategoryInfo(
         code="P1",
@@ -134,7 +134,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "The description is the attack surface."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM01", "MITRE-ATLAS"),
+        references=("OWASP:LLM01:2025", "MITRE-ATLAS"),
     ),
     CategoryInfo(
         code="P2",
@@ -145,7 +145,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "(indirect prompt injection)."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM01",),
+        references=("OWASP:LLM01:2025",),
     ),
     CategoryInfo(
         code="P3",
@@ -156,7 +156,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "comment tricks in tool names/descriptions."
         ),
         default_severity=Severity.HIGH,
-        references=("CWE-176", "OWASP:LLM01"),
+        references=("CWE-176", "OWASP:LLM01:2025"),
     ),
     CategoryInfo(
         code="P4",
@@ -167,7 +167,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "egress, or wildcard scopes."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM06", "CWE-269"),
+        references=("OWASP:LLM06:2025", "CWE-269"),
     ),
     CategoryInfo(
         code="P5",
@@ -178,7 +178,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "unintended exfiltration."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM06", "OWASP:LLM02"),
+        references=("OWASP:LLM06:2025", "OWASP:LLM02:2025"),
     ),
     CategoryInfo(
         code="P6",
@@ -189,7 +189,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "tools that echo environment variables."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM02", "CWE-798"),
+        references=("OWASP:LLM02:2025", "CWE-798"),
     ),
     CategoryInfo(
         code="P7",

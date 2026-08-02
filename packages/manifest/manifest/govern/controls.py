@@ -39,18 +39,43 @@ def _function_for(category: str) -> str:
     return "GOVERN"
 
 
+def _status_for(worst: Severity | None) -> str:
+    """Three-state status driven by the worst severity mapped to a function.
+
+    A binary ok/gap flips on a single LOW advisory, so a basically healthy project
+    reports "gap" against all four functions and the field carries no information.
+    Severity already drives the fail threshold, the policy profiles, and the SARIF
+    level; it should drive this too.
+    """
+    if worst is None:
+        return "ok"
+    if worst >= Severity.HIGH:
+        return "gap"
+    return "advisory"
+
+
 def assess(findings: list[Finding]) -> dict[str, dict]:
-    """Return {function: {"categories": [...], "count": n, "status": "gap"|"ok"}}."""
+    """Return {function: {"categories": [...], "count": n, "status": ...}}.
+
+    ``status`` is ``ok`` (nothing mapped), ``advisory`` (worst is LOW/MEDIUM), or
+    ``gap`` (something is HIGH/CRITICAL). All four functions are always present, so
+    the report shows framework *coverage* rather than only the parts that failed.
+    """
     out: dict[str, dict] = {
         fn: {"categories": [], "count": 0, "status": "ok"} for fn in RMF_FUNCTIONS
     }
+    worst: dict[str, Severity] = {}
     for f in findings:
         fn = _function_for(f.category)
         entry = out[fn]
         entry["count"] += 1
         if f.category not in entry["categories"]:
             entry["categories"].append(f.category)
-        entry["status"] = "gap"
+        current = worst.get(fn)
+        if current is None or f.severity > current:
+            worst[fn] = f.severity
+    for fn in RMF_FUNCTIONS:
+        out[fn]["status"] = _status_for(worst.get(fn))
     return out
 
 
@@ -70,10 +95,16 @@ EU_AI_ACT: dict[str, tuple[str, ...]] = {
 
 
 def assess_eu_ai_act(findings: list[Finding]) -> dict[str, dict]:
-    """Map findings to EU AI Act articles. Advisory — not a conformity assessment."""
+    """Map findings to EU AI Act articles. Advisory — not a conformity assessment.
+
+    Mapping is many-to-many: one finding can be evidence toward several Articles
+    (B1 informs both Art.10 data governance and Art.11 technical documentation), so
+    the loop does not break on the first match. Status is three-state, as for NIST.
+    """
     out: dict[str, dict] = {
         art: {"categories": [], "count": 0, "status": "ok"} for art in EU_AI_ACT
     }
+    worst: dict[str, Severity] = {}
     for f in findings:
         for article, prefixes in EU_AI_ACT.items():
             if any(f.category == p or f.category.startswith(p) for p in prefixes):
@@ -81,16 +112,20 @@ def assess_eu_ai_act(findings: list[Finding]) -> dict[str, dict]:
                 entry["count"] += 1
                 if f.category not in entry["categories"]:
                     entry["categories"].append(f.category)
-                entry["status"] = "gap"
+                current = worst.get(article)
+                if current is None or f.severity > current:
+                    worst[article] = f.severity
+    for article in EU_AI_ACT:
+        out[article]["status"] = _status_for(worst.get(article))
     return out
 
 
 def b9_findings(assessment: dict[str, dict]) -> list[Finding]:
-    """Emit one advisory B9 finding per RMF function that has open gaps."""
+    """Emit one advisory B9 finding per RMF function with anything mapped to it."""
     out: list[Finding] = []
     for fn in RMF_FUNCTIONS:
         entry = assessment.get(fn, {})
-        if entry.get("status") == "gap":
+        if entry.get("status") in ("gap", "advisory"):
             cats = ", ".join(entry["categories"])
             out.append(
                 Finding(

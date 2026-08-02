@@ -9,6 +9,8 @@ tool. This is detection-and-explanation only — never a runnable exploit.
 
 from __future__ import annotations
 
+import re
+
 from bulwark_core.signals import SignalBundle
 
 from warden.spec.model import (
@@ -46,24 +48,45 @@ def _sinks(spec: AgentSpec) -> list[tuple[str, str]]:
     return out
 
 
+# Sources × sinks is a cross-product, so a large assembly can emit hundreds of
+# pairings. Report the first MAX_PAIRS in full and then one roll-up naming the total,
+# so a big tool-set produces a readable report instead of a wall of near-duplicates.
+MAX_PAIRS = 25
+
+
 def collect(spec: AgentSpec, bundle: SignalBundle) -> None:
     """Emit A2 (toxic combination) and A5 (open egress) signals."""
     sources = _sources(spec)
     sinks = _sinks(spec)
 
-    for src_label, src_caps in sources:
-        for sink_label, sink_caps in sinks:
-            if src_label == sink_label:
-                continue
-            bundle.add(
-                "agent.toxic_combination",
-                f"{src_label}->{sink_label}",
-                path=f"{src_label} -> {sink_label}",
-                evidence=(
-                    f"'{src_label}' ({src_caps}) can read sensitive data reachable to "
-                    f"'{sink_label}' ({sink_caps}) which sends it outward"
-                ),
-            )
+    pairs = [
+        (src_label, src_caps, sink_label, sink_caps)
+        for src_label, src_caps in sources
+        for sink_label, sink_caps in sinks
+        if src_label != sink_label
+    ]
+    for src_label, src_caps, sink_label, sink_caps in pairs[:MAX_PAIRS]:
+        bundle.add(
+            "agent.toxic_combination",
+            f"{src_label}->{sink_label}",
+            path=f"{src_label} -> {sink_label}",
+            evidence=(
+                f"'{src_label}' ({src_caps}) can read sensitive data reachable to "
+                f"'{sink_label}' ({sink_caps}) which sends it outward"
+            ),
+        )
+    if len(pairs) > MAX_PAIRS:
+        bundle.add(
+            "agent.toxic_combination",
+            f"+{len(pairs) - MAX_PAIRS} more",
+            path=f"{len(sources)} source(s) -> {len(sinks)} sink(s)",
+            detail=f"{len(pairs)} pairings total",
+            evidence=(
+                f"{len(pairs)} sensitive-source → egress-sink pairings across "
+                f"{len(sources)} source(s) and {len(sinks)} sink(s); "
+                f"{MAX_PAIRS} shown individually above"
+            ),
+        )
 
     # A5 — an unrestricted network egress in the presence of any sensitive source.
     net_tools = [t for t in spec.tools if Capability.NET_OUT in t.capabilities]
@@ -134,10 +157,28 @@ def _collect_injectable_flows(
         )
 
 
+# A scope that names a concrete host, URL prefix, or CIDR is a real allow-list, even
+# when it never uses the word. Matching only the literal string "allowlist" reported
+# `https://api.example.com/**` as unrestricted egress — a false positive on exactly
+# the configuration the finding asks the user to adopt.
+_CONSTRAINED_SCOPE = re.compile(
+    r"allow[-_ ]?list"
+    r"|https?://[\w.-]+"  # an explicit URL prefix
+    r"|\b(?:[\w-]+\.)+[a-z]{2,}\b"  # a bare hostname / domain
+    r"|\b\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?\b",  # an IP or CIDR
+    re.IGNORECASE,
+)
+
+
 def _any_unrestricted_egress(net_tools: list[Tool]) -> bool:
-    """True if any net_out tool lacks an allow-list scope (heuristic)."""
+    """True if any net_out tool lacks a constrained egress scope.
+
+    "Constrained" means the scope names something concrete — an allow-list, a URL
+    prefix, a hostname, or a CIDR. A tool with no scopes at all is unrestricted by
+    omission, which is the common real-world case.
+    """
     for t in net_tools:
-        scopes = " ".join(t.scopes).lower()
-        if not scopes or ("allowlist" not in scopes and "allow-list" not in scopes):
+        scopes = " ".join(t.scopes).strip()
+        if not scopes or not _CONSTRAINED_SCOPE.search(scopes):
             return True
     return False

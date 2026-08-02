@@ -11,12 +11,20 @@ from typing import Optional
 import typer
 from bulwark_core.findings import ScanResult
 from bulwark_core.severity import parse_severity
+from bulwark_core.signals import SignalBundle
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 from airlock import __version__
-from airlock.rules import RuleEngine, RuleLoadError, load_rules
+from airlock.rules import (
+    KNOWN_SIGNALS,
+    RuleEngine,
+    RuleLoadError,
+    load_rules,
+    unknown_signals,
+    unused_signals,
+)
 
 app = typer.Typer(
     name="airlock",
@@ -181,6 +189,20 @@ def scan_mcp(
 ) -> None:
     """Scan an MCP server for tool-poisoning and permission risks (P1–P9)."""
     from airlock.scanners.mcp import MCPScanner
+    from airlock.scanners.mcp.client import classify_target
+
+    transport, _is_remote, _secure = classify_target(target)
+    if transport == "stdio":
+        # Enumerating a stdio server requires starting it: the protocol has no other
+        # way to list tools. Airlock never *invokes* a tool, but the server's own
+        # module-level code runs with your privileges. Say so at the moment the user
+        # makes the trade, rather than leaving it in documentation.
+        _err.print(
+            "[yellow]note:[/yellow] scanning a stdio server starts it — the server's own "
+            "startup code runs with your privileges. Airlock never invokes its tools. "
+            "Use a container, or scan the static tool-spec instead "
+            "([bold]airlock scan toolspec[/bold]) where possible."
+        )
 
     engine = _load_engine()
     scanner = MCPScanner(engine)
@@ -251,14 +273,97 @@ def rules_lint(
         None, "--dir", help="Rule directory to validate (defaults to packaged rules)."
     ),
 ) -> None:
-    """Validate every rule pack; exit non-zero on the first error."""
+    """Validate every rule pack: schema, categories, and signal names.
+
+    A mistyped signal name is the one rule error that otherwise fails *silently* —
+    no rule matches, nothing errors, and the detection is simply absent. Every rule's
+    ``match.signal`` is checked against the signals Airlock's analyzers actually emit.
+    """
     console = Console()
     try:
         rules = load_rules(rules_dir)
     except RuleLoadError as exc:
         _err.print(f"[bold red]Invalid rule pack:[/bold red] {exc}")
         raise typer.Exit(code=1) from exc
+
+    broken = unknown_signals(rules, set(KNOWN_SIGNALS))
+    if broken:
+        _err.print("[bold red]Rules match on signals no analyzer emits:[/bold red]")
+        for rule_id, signal in broken:
+            _err.print(f"  {rule_id}: signal {signal!r} is never produced")
+        raise typer.Exit(code=1)
+
     console.print(f"[green]OK[/green] — {len(rules)} rule(s) validated.")
+    dead = unused_signals(rules, set(KNOWN_SIGNALS))
+    if dead:
+        console.print(f"[dim]note: {len(dead)} declared signal(s) unused by any rule: "
+                      f"{', '.join(dead)}[/dim]")
+
+
+@rules_app.command("debug")
+def rules_debug(
+    kind: str = typer.Argument(..., help="What to scan: model | mcp | toolspec."),
+    target: str = typer.Argument(..., help="The scan target."),
+    signal: Optional[str] = typer.Option(  # noqa: UP045
+        None, "--signal", help="Only show signals whose name contains this substring."
+    ),
+) -> None:
+    """Dump the signal bundle a scan produces, without applying any rules.
+
+    The first question when a rule stops firing is whether the *evidence* exists.
+    This prints every signal an analyzer emitted, so you can see immediately whether
+    the analyzer produced nothing or whether the rule's ``match.signal`` name simply
+    does not match what was emitted.
+    """
+    console = Console()
+    engine = _load_engine()
+    bundle = _bundle_for(kind, target, engine)
+
+    table = Table(show_lines=False, expand=True)
+    table.add_column("Signal", no_wrap=True)
+    table.add_column("Value", overflow="fold")
+    table.add_column("Path", overflow="fold")
+    table.add_column("Detail", overflow="fold")
+
+    shown = 0
+    for s in bundle.signals:
+        if signal and signal not in s.name:
+            continue
+        shown += 1
+        table.add_row(s.name, str(s.value)[:120], s.path or "-", s.detail or "-")
+
+    console.print(f"[bold]{bundle.target}[/bold] scan of [bold]{target}[/bold]")
+    console.print(table)
+    names = sorted(bundle.names())
+    console.print(f"[dim]{shown} signal(s) shown; {len(bundle.signals)} total; "
+                  f"{len(names)} distinct name(s).[/dim]")
+    unmatched = [n for n in names if n not in KNOWN_SIGNALS]
+    if unmatched:
+        console.print(
+            f"[yellow]warning:[/yellow] emitted but not declared in KNOWN_SIGNALS: "
+            f"{', '.join(unmatched)}"
+        )
+
+
+def _bundle_for(kind: str, target: str, engine: RuleEngine) -> SignalBundle:
+    """Build the signal bundle for a target without evaluating rules."""
+    kind = kind.lower()
+    if kind == "model":
+        from airlock.scanners.model import ModelScanner
+
+        return ModelScanner(engine).collect_signals(target)
+    if kind == "mcp":
+        from airlock.scanners.mcp import MCPScanner
+
+        return MCPScanner(engine).collect_signals(target)
+    if kind == "toolspec":
+        from airlock.scanners.mcp import MCPScanner
+        from airlock.scanners.toolspec.loader import load_toolspec
+
+        scanner = MCPScanner(engine, connector=lambda t: load_toolspec(Path(t)))
+        return scanner.collect_signals(target)
+    _err.print(f"[bold red]unknown kind {kind!r}; expected model|mcp|toolspec[/bold red]")
+    raise typer.Exit(code=2)
 
 
 @rules_app.command("show")

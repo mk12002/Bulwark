@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.findings import Finding, Location, ScanResult, dedupe
 from bulwark_core.scanner import Scanner
 from bulwark_core.severity import Severity
 from bulwark_core.signals import SignalBundle
@@ -70,16 +70,5 @@ class MCPScanner(Scanner):
                 )
             )
         return ScanResult(
-            target=target, target_type="mcp", tool="airlock", findings=_dedupe(findings)
+            target=target, target_type="mcp", tool="airlock", findings=dedupe(findings)
         )
-
-
-def _dedupe(findings: list[Finding]) -> list[Finding]:
-    seen: set[tuple[str, str | None, str | None, str]] = set()
-    out: list[Finding] = []
-    for f in findings:
-        key = (f.id, f.location.path, f.location.detail, f.evidence)
-        if key not in seen:
-            seen.add(key)
-            out.append(f)
-    return out

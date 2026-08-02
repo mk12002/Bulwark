@@ -17,6 +17,20 @@ from manifest.bom.model import AIBOM, Component
 _NOASSERTION = "NOASSERTION"
 _SPDXID_BAD = re.compile(r"[^A-Za-z0-9.\-]+")
 
+# SPDX defines ~40 typed relationships where CycloneDX 1.5 has only "dependsOn", so
+# the AIBOM's own relationship verbs survive translation here instead of being
+# flattened. Anything unmapped degrades to DEPENDS_ON, which is always true.
+_RELATIONSHIP_TYPE: dict[str, str] = {
+    "uses": "DEPENDS_ON",
+    "wires": "DEPENDS_ON",
+    "trained-on": "GENERATED_FROM",
+    "generated-from": "GENERATED_FROM",
+    "contains": "CONTAINS",
+    "variant-of": "VARIANT_OF",
+    "describes": "DESCRIBES",
+    "documented-by": "DOCUMENTATION_OF",
+}
+
 
 def _spdxid(key: str) -> str:
     return "SPDXRef-" + _SPDXID_BAD.sub("-", key).strip("-")
@@ -81,7 +95,7 @@ def to_spdx(bom: AIBOM) -> dict:
         doc["relationships"].append(
             {
                 "spdxElementId": _spdxid(rel.src),
-                "relationshipType": "DEPENDS_ON",
+                "relationshipType": _RELATIONSHIP_TYPE.get(rel.rel.lower(), "DEPENDS_ON"),
                 "relatedSpdxElement": _spdxid(rel.dst),
             }
         )

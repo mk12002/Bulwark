@@ -9,10 +9,15 @@ from manifest.govern.controls import EU_AI_ACT, RMF_FUNCTIONS, assess, assess_eu
 
 
 def risk_register(findings: list[Finding], bom: AIBOM) -> list[dict]:
-    """Build a risk register: one row per finding, worst-first, with a component name."""
-    rank = {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0}
+    """Build a risk register: one row per finding, worst-first, with a component name.
+
+    ``owner`` and ``status`` are emitted as empty template columns. A register without
+    them is a list of complaints rather than something a team can track — and Manifest
+    cannot infer an owner from a repository, so it supplies the column and leaves the
+    value for a human (or a future CODEOWNERS mapping) to fill in.
+    """
     rows: list[dict] = []
-    for f in sorted(findings, key=lambda x: -rank[x.severity.value]):
+    for f in sorted(findings, key=lambda x: -x.severity.rank):
         key = f.location.path or ""
         component = bom.get(key)
         rows.append(
@@ -22,6 +27,8 @@ def risk_register(findings: list[Finding], bom: AIBOM) -> list[dict]:
                 "risk": f.title,
                 "severity": f.severity.value,
                 "action": f.remediation,
+                "owner": "",  # to be assigned
+                "status": "open",
             }
         )
     return rows

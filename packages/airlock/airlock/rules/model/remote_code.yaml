@@ -14,7 +14,7 @@ rules:
       in the repo when the model loads.
     remediation: >-
       Load with trust_remote_code disabled, and review any custom modeling code first.
-    references: ["OWASP:LLM05", "CWE-494"]
+    references: ["OWASP:LLM03:2025", "CWE-494"]
 
   - id: M5-auto-map
     category: M5
@@ -29,7 +29,7 @@ rules:
       which are imported and run at load time.
     remediation: >-
       Review the referenced custom code; do not load unless you trust it fully.
-    references: ["OWASP:LLM05", "CWE-494"]
+    references: ["OWASP:LLM03:2025", "CWE-494"]
 
   - id: M5-custom-py-present
     category: M5
@@ -44,4 +44,4 @@ rules:
       that honour trust_remote_code, executing arbitrary repo code.
     remediation: >-
       Review each custom Python file before loading with remote code enabled.
-    references: ["OWASP:LLM05", "CWE-494"]
+    references: ["OWASP:LLM03:2025", "CWE-494"]

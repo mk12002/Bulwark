@@ -14,7 +14,7 @@ rules:
       host — the broadest possible capability.
     remediation: >-
       Remove or tightly sandbox shell tools; expose only specific, audited actions.
-    references: ["OWASP:LLM06", "CWE-269"]
+    references: ["OWASP:LLM06:2025", "CWE-269"]
 
   - id: P4-filesystem-write
     category: P4
@@ -29,7 +29,7 @@ rules:
       can be chained into code execution.
     remediation: >-
       Scope filesystem access to an explicit, non-sensitive directory allowlist.
-    references: ["OWASP:LLM06", "CWE-269"]
+    references: ["OWASP:LLM06:2025", "CWE-269"]
 
   - id: P4-network-egress
     category: P4
@@ -44,7 +44,7 @@ rules:
       the agent reach arbitrary hosts.
     remediation: >-
       Restrict egress to an allowlist of required hosts.
-    references: ["OWASP:LLM06", "CWE-269"]
+    references: ["OWASP:LLM06:2025", "CWE-269"]
 
   - id: P4-wildcard-scope
     category: P4
@@ -59,7 +59,7 @@ rules:
       otherwise limit what the tool can touch.
     remediation: >-
       Replace wildcard scopes with explicit, minimal allowlists.
-    references: ["OWASP:LLM06", "CWE-269"]
+    references: ["OWASP:LLM06:2025", "CWE-269"]
 
   - id: P5-cross-tool-exfil
     category: P5
@@ -75,4 +75,4 @@ rules:
     remediation: >-
       Separate read-sensitive and network-egress capabilities across trust boundaries,
       or require explicit human approval between them.
-    references: ["OWASP:LLM06", "OWASP:LLM02"]
+    references: ["OWASP:LLM06:2025", "OWASP:LLM02:2025"]

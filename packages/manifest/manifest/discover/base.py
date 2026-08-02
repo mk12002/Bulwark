@@ -6,6 +6,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from bulwark_core.limits import walk_files
+
 from manifest.bom.model import Component
 
 _SKIP_DIRS = {
@@ -34,10 +36,17 @@ class DiscoveryContext:
 
     @classmethod
     def build(cls, root: Path) -> DiscoveryContext:
+        """Walk the project once: bounded, symlink-contained, and skipping noise dirs.
+
+        ``walk_files`` provides the file cap and the containment check (a project
+        containing a symlink to ``/`` must not make discovery traverse the filesystem);
+        ``_SKIP_DIRS`` then removes virtualenvs, VCS, and build output, without which
+        the BOM would inventory every installed dependency's example code.
+        """
         files = [
             p
-            for p in sorted(root.rglob("*"))
-            if p.is_file() and not any(part in _SKIP_DIRS for part in p.relative_to(root).parts)
+            for p in walk_files(root)
+            if not any(part in _SKIP_DIRS for part in p.relative_to(root).parts)
         ]
         return cls(root=root, files=files)
 

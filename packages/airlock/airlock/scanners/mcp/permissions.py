@@ -99,21 +99,41 @@ def collect(inventory: MCPInventory, bundle: SignalBundle) -> None:
     _emit_exfil_paths(tool_caps, bundle)
 
 
+# Sources × sinks is a cross-product; a server with many tools would otherwise emit
+# hundreds of near-identical findings. Show the first MAX_PATHS and roll up the rest.
+MAX_PATHS = 25
+
+
 def _emit_exfil_paths(tool_caps: dict[str, set[str]], bundle: SignalBundle) -> None:
     sources = [(n, c & _SOURCE_CAPS) for n, c in tool_caps.items() if c & _SOURCE_CAPS]
     sinks = [(n, c & _SINK_CAPS) for n, c in tool_caps.items() if c & _SINK_CAPS]
-    for src_name, src_caps in sources:
-        for sink_name, sink_caps in sinks:
-            if src_name == sink_name and not (src_caps and sink_caps):
-                continue
-            src_c = ", ".join(sorted(src_caps))
-            sink_c = ", ".join(sorted(sink_caps))
-            bundle.add(
-                "exfil.path",
-                f"{src_name}->{sink_name}",
-                path=f"{src_name} -> {sink_name}",
-                evidence=(
-                    f"'{src_name}' ({src_c}) can read sensitive data; "
-                    f"'{sink_name}' ({sink_c}) can send it outward"
-                ),
-            )
+    pairs = [
+        (src_name, src_caps, sink_name, sink_caps)
+        for src_name, src_caps in sources
+        for sink_name, sink_caps in sinks
+        if not (src_name == sink_name and not (src_caps and sink_caps))
+    ]
+    for src_name, src_caps, sink_name, sink_caps in pairs[:MAX_PATHS]:
+        src_c = ", ".join(sorted(src_caps))
+        sink_c = ", ".join(sorted(sink_caps))
+        bundle.add(
+            "exfil.path",
+            f"{src_name}->{sink_name}",
+            path=f"{src_name} -> {sink_name}",
+            evidence=(
+                f"'{src_name}' ({src_c}) can read sensitive data; "
+                f"'{sink_name}' ({sink_c}) can send it outward"
+            ),
+        )
+    if len(pairs) > MAX_PATHS:
+        bundle.add(
+            "exfil.path",
+            f"+{len(pairs) - MAX_PATHS} more",
+            path=f"{len(sources)} source(s) -> {len(sinks)} sink(s)",
+            detail=f"{len(pairs)} paths total",
+            evidence=(
+                f"{len(pairs)} source → sink exfiltration paths across "
+                f"{len(sources)} source tool(s) and {len(sinks)} sink tool(s); "
+                f"{MAX_PATHS} shown individually above"
+            ),
+        )

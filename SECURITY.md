@@ -52,7 +52,23 @@ PyPI, this table will track supported versions.
 ## Our commitments
 
 - **Inspection only.** Bulwark never deserializes or executes what it scans; a regression here is a
-  top-severity bug.
+  top-severity bug. Enforced by a test, not only by discipline
+  (`packages/bulwark-core/tests/test_architecture.py`).
 - **Deterministic-first.** The optional AI layer is off by default and never gates or downgrades a
-  deterministic finding.
+  deterministic finding. Text sent to a provider is fenced in spotlighting markers, because it comes
+  from the artifact being scanned and is therefore attacker-controlled.
 - **Benign fixtures only.** Every test artifact that simulates an attack uses inert markers.
+- **Bounded by default.** Every parse has a named limit with an `AIRLOCK_LIMIT_*` override — opcodes,
+  archive members, compression ratio, member and total size, nested blobs, regex input, evidence
+  length, files walked, and connection time. A malformed value falls back to the default rather than
+  disabling the control or crashing the scan.
+- **No egress unless asked.** OSV lookups are offline by default (`--online` opts in), the AI layer is
+  off and local-first when on, and no ambient credentials are sent to the Hugging Face Hub.
+
+## Known operational caveat
+
+Enumerating a **stdio** MCP server requires spawning it: the protocol has no other way to list its
+tools. Airlock never *invokes* a tool — there is no `tools/call` in the codebase — but it cannot
+prevent the server's own module-level code from running with your privileges. The CLI warns on this
+path. Scan untrusted servers in a container or VM, or use `airlock scan toolspec`, which parses a
+declared tool-definition file and runs the same P1–P9 rules with nothing spawned.

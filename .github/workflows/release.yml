@@ -2,7 +2,13 @@ name: Release
 
 # Builds each package's wheel/sdist and publishes to PyPI on a version tag.
 # This is a monorepo, so every package under packages/ is built and published
-# independently. Publishing uses PyPI Trusted Publishing (OIDC) — no stored token.
+# independently. Publishing uses PyPI Trusted Publishing (OIDC) — no stored token,
+# so there is no long-lived credential in CI to exfiltrate.
+#
+# Ordering is *enforced*, not documentary: bulwark-core publishes first, because the
+# other four declare it as a dependency. Publishing them in parallel would leave PyPI
+# briefly holding an `airlock` that depends on a `bulwark-core` version which does not
+# exist yet.
 
 on:
   push:
@@ -13,14 +19,11 @@ permissions:
   contents: read
 
 jobs:
-  release:
+  # ------------------------------------------------------------------ #
+  # 1. The shared spine, first and alone.
+  # ------------------------------------------------------------------ #
+  core:
     runs-on: ubuntu-latest
-    strategy:
-      # Fail-fast off so one package's hiccup doesn't block the others; publish
-      # bulwark-core first in practice (order here is documentary, jobs run in parallel).
-      fail-fast: false
-      matrix:
-        package: [bulwark-core, airlock, warden, manifest, bulwark]
     environment: pypi
     permissions:
       id-token: write # PyPI Trusted Publishing (OIDC)
@@ -30,11 +33,58 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Build bulwark-core
+        run: |
+          python -m pip install --upgrade "build==1.5.0" "twine==6.2.0"
+          python -m build packages/bulwark-core --outdir dist
+          twine check dist/*
+
+      - name: Sign the artifacts (Sigstore, keyless via the workflow's OIDC identity)
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        with:
+          inputs: ./dist/*.tar.gz ./dist/*.whl
+          upload-signing-artifacts: true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-bulwark-core
+          path: dist/
+
+      - name: Publish bulwark-core to PyPI
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  # ------------------------------------------------------------------ #
+  # 2. The tools, only once core is on PyPI.
+  # ------------------------------------------------------------------ #
+  tools:
+    needs: core
+    runs-on: ubuntu-latest
+    strategy:
+      # One tool's hiccup should not block the others; core has already published.
+      fail-fast: false
+      matrix:
+        package: [airlock, warden, manifest, bulwark]
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Build ${{ matrix.package }}
         run: |
-          python -m pip install --upgrade build twine
+          python -m pip install --upgrade "build==1.5.0" "twine==6.2.0"
           python -m build packages/${{ matrix.package }} --outdir dist
           twine check dist/*
+
+      - name: Sign the artifacts (Sigstore, keyless via the workflow's OIDC identity)
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        with:
+          inputs: ./dist/*.tar.gz ./dist/*.whl
+          upload-signing-artifacts: true
 
       - uses: actions/upload-artifact@v4
         with:
@@ -44,3 +94,38 @@ jobs:
       - name: Publish ${{ matrix.package }} to PyPI
         if: startsWith(github.ref, 'refs/tags/v')
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  # ------------------------------------------------------------------ #
+  # 3. Dogfooding: publish Bulwark's own AI-BOM as a release artifact.
+  #    A tool that generates AI-BOMs should ship one for itself.
+  # ------------------------------------------------------------------ #
+  self-bom:
+    needs: core
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the workspace
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/bulwark-core
+          pip install -e packages/airlock -e packages/warden -e packages/manifest -e packages/bulwark
+
+      - name: Generate Bulwark's own AI-BOM
+        run: |
+          manifest scan . --format cyclonedx > bulwark-bom.cyclonedx.json
+          manifest scan . --format spdx      > bulwark-bom.spdx.json
+          manifest scan . --govern --format md > bulwark-governance.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bulwark-ai-bom
+          path: |
+            bulwark-bom.cyclonedx.json
+            bulwark-bom.spdx.json
+            bulwark-governance.md

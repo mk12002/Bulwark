@@ -44,7 +44,7 @@ class ModelScanner(Scanner):
         inventory = resolve(target)
         pickle_scan.collect(inventory.files, bundle, strict=self.strict)
         confusion.collect(inventory.files, bundle, strict=self.strict)
-        serialized.collect(inventory.files, bundle)
+        serialized.collect(inventory.files, bundle, strict=self.strict)
         formats.collect(inventory, bundle)
         remote_code.collect(inventory, bundle)
         archive.collect(inventory.files, bundle)

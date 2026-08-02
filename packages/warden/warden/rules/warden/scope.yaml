@@ -14,7 +14,7 @@ rules:
       holds more power than a specific task needs, widening the blast radius.
     remediation: >-
       Constrain the tool to an explicit allow-list of paths/hosts/resources it needs.
-    references: ["OWASP:LLM06", "CWE-269"]
+    references: ["OWASP:LLM06:2025", "CWE-269"]
 
   - id: A7-excessive-data-access
     category: A7
@@ -29,4 +29,4 @@ rules:
       stated purpose requires increases what a compromise can reach.
     remediation: >-
       Scope data access to the specific sources the agent's task requires.
-    references: ["OWASP:LLM06"]
+    references: ["OWASP:LLM06:2025"]

@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from bulwark_core.limits import walk_files
+
 # File-extension groups used across the model analyzers.
 PICKLE_EXTENSIONS = {".bin", ".pt", ".pth", ".ckpt", ".pkl", ".pickle", ".joblib", ".dill"}
 SAFETENSORS_EXTENSIONS = {".safetensors"}
@@ -107,6 +109,9 @@ class ModelInventory:
     target: str
     root: Path
     files: list[ArtifactFile] = field(default_factory=list)
+    # Set when an ``hf:org/name@revision`` target pinned an immutable commit.
+    revision: str | None = None
+    pinned: bool = False
 
     def pickles(self) -> list[ArtifactFile]:
         return [f for f in self.files if f.is_pickle]
@@ -155,11 +160,20 @@ def _resolve_local(path_str: str) -> ModelInventory:
     if root.is_file():
         files = [_artifact_file(root, root.parent)]
         return ModelInventory(target=path_str, root=root.parent, files=files)
-    files = [_artifact_file(p, root) for p in sorted(root.rglob("*")) if p.is_file()]
+    # Bounded, symlink-contained walk — a hostile artifact directory must not be able
+    # to make the scan traverse the whole filesystem (see bulwark_core.limits).
+    files = [_artifact_file(p, root) for p in walk_files(root)]
     return ModelInventory(target=path_str, root=root, files=files)
 
 
-def _resolve_hf(repo_id: str) -> ModelInventory:
+def _resolve_hf(repo_ref: str) -> ModelInventory:
+    """Resolve ``org/name`` or ``org/name@revision`` from the Hugging Face Hub.
+
+    A bare repo id resolves against a mutable git branch: the publisher can force-push
+    and change the weights under you, so a scan of ``org/name`` is not reproducible.
+    Passing ``@<revision>`` pins to an immutable commit and makes the scan result
+    attributable to specific bytes — the model-side equivalent of a lockfile entry.
+    """
     try:
         from huggingface_hub import snapshot_download
     except ImportError as exc:  # pragma: no cover - optional dependency
@@ -167,13 +181,27 @@ def _resolve_hf(repo_id: str) -> ModelInventory:
             "huggingface_hub is required for hf: targets. Install with "
             "'pip install airlock[model]'."
         ) from exc
+
+    raw_id, _, raw_revision = repo_ref.partition("@")
+    repo_id = raw_id.strip()
+    revision: str | None = raw_revision.strip() or None
+    if not repo_id:
+        raise ResolveError(f"empty repo id in hf:{repo_ref}")
+
     try:
-        local = snapshot_download(repo_id=repo_id, allow_patterns=_HF_ALLOW_PATTERNS)
+        local = snapshot_download(
+            repo_id=repo_id,
+            revision=revision,
+            allow_patterns=_HF_ALLOW_PATTERNS,
+        )
     except Exception as exc:  # pragma: no cover - network/hub errors
-        raise ResolveError(f"could not fetch hf:{repo_id}: {exc}") from exc
+        raise ResolveError(f"could not fetch hf:{repo_ref}: {exc}") from exc
+
     root = Path(local)
-    files = [_artifact_file(p, root) for p in sorted(root.rglob("*")) if p.is_file()]
-    return ModelInventory(target=f"hf:{repo_id}", root=root, files=files)
+    files = [_artifact_file(p, root) for p in walk_files(root)]
+    return ModelInventory(
+        target=f"hf:{repo_ref}", root=root, files=files, revision=revision, pinned=bool(revision)
+    )
 
 
 def _artifact_file(path: Path, root: Path) -> ArtifactFile:

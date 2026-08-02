@@ -75,6 +75,28 @@ def _check_rug_pull(inventory: MCPInventory, bundle: SignalBundle, state_dir: Pa
                 evidence=f"definition of '{name}' changed since the approved baseline",
             )
 
+    # A tool appearing after approval is the classic rug-pull shape: the server you
+    # reviewed now offers capability you never saw. A tool disappearing is weaker but
+    # still a silent change to an approved surface. Only report either once a
+    # baseline exists — on a first scan everything is "new" by definition.
+    if previous:
+        for name in sorted(set(current) - set(previous)):
+            bundle.add(
+                "tool.definition_changed",
+                name,
+                path=name,
+                detail="added",
+                evidence=f"new tool '{name}' appeared since the approved baseline",
+            )
+        for name in sorted(set(previous) - set(current)):
+            bundle.add(
+                "tool.definition_changed",
+                name,
+                path=name,
+                detail="removed",
+                evidence=f"tool '{name}' disappeared since the approved baseline",
+            )
+
     # Persist/update the baseline for next time.
     try:
         path.parent.mkdir(parents=True, exist_ok=True)

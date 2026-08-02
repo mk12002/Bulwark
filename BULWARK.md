@@ -29,8 +29,11 @@ They compose: **Manifest** builds an inventory and calls **Airlock** on each mod
 
 - All three share a spine: `Finding` / `Severity` / rule engine / report renderers (terminal, JSON,
   HTML, SARIF) / the optional AI provider layer. Build it once, reuse three times.
-- Manifest has a **hard dependency** on Airlock and Warden (it calls them). Trivial in a monorepo,
-  painful across repos.
+- Manifest **calls Airlock and Warden as libraries** (`--scan-risk`), and Warden calls Airlock
+  (`--scan-parts`). Trivial in a monorepo, painful across repos. Note the *packaging* dependency is
+  deliberately soft: the siblings are declared as optional extras (`manifest[risk]`,
+  `warden[bridge]`) and each bridge catches `ImportError` and degrades, so `pip install manifest`
+  still yields a working AI-BOM generator with a small footprint.
 - One coherent product story beats three scattered demos for portfolio signal.
 - Each package still ships its own CLI and is independently installable, so nothing is lost.
 
@@ -89,7 +92,11 @@ members = ["packages/*"]
 Everything the three tools have in common lives here, and **nothing tool-specific does**. The stable
 public surface:
 
-- `bulwark_core.findings`: `Severity`, `Location`, `Finding`, `ScanResult` (pydantic v2 models).
+- `bulwark_core.findings`: `Severity`, `Location`, `Finding`, `ScanResult` (pydantic v2 models), plus
+  `finding_key()` / `dedupe()` — the **one** definition of finding identity, shared by in-scan
+  deduplication, baseline matching, and the SARIF `partialFingerprints` used for cross-run alert
+  identity. Changing that tuple invalidates every baseline *and* resurrects every dismissed code-
+  scanning alert, so it lives in exactly one place.
 - `bulwark_core.taxonomy`: a `register_categories()` API so each tool adds its own codes
   (Airlock: `M*`/`P*`; Warden: `A*`; Manifest: `B*`) to a shared registry with titles/refs.
 - `bulwark_core.rules`: the YAML rule schema, loader, `lint`, and a matcher over analyzer signals.
@@ -99,7 +106,14 @@ public surface:
   (OpenAI/OpenRouter/LM Studio/vLLM, BYO key+base_url), `anthropic`; `enrich()` helpers. **Off by
   default**, gated by `enabled AND --ai`, capped by `max_findings_to_enrich`, keys from env only.
 - `bulwark_core.scanner`: `Scanner` ABC (`resolve → analyze → rules → ScanResult`) that each tool
-  subclasses.
+  subclasses. Optional `result_score()` / `result_meta()` hooks let a tool attach a headline score
+  and structured metadata without bypassing the shared pipeline.
+- `bulwark_core.config`: `AIConfig` plus `BulwarkSettings`, the settings base every tool extends so
+  all three layer configuration identically — **environment over TOML file over defaults**. Env wins
+  because it is the operator's channel (CI, containers), while a committed config file may be
+  controlled by the repository being scanned and must never weaken a pipeline.
+- `bulwark_core.limits`: hostile-input caps, `read_bounded()`, and `walk_files()` — a bounded,
+  symlink-contained directory walk shared by every tool that enumerates a target tree.
 
 Design invariants shared by all tools: deterministic-first (fully useful with zero AI); defensive
 only (detect/report, never weaponize; fixtures use benign inert markers); explainable findings

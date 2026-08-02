@@ -54,8 +54,24 @@ def _signature(c: Component) -> tuple[str, str]:
 
 
 def _attrs(c: Component) -> tuple:
-    """The fields whose change makes a same-key component 'changed'."""
-    return (c.provenance.version, c.provenance.hash, c.license.id, c.license.risk)
+    """The fields whose change makes a same-key component 'changed'.
+
+    ``source`` and ``author`` are included because a component whose *origin* moved —
+    a model that switched Hugging Face organisation under the same name — is the most
+    security-relevant provenance change there is, and a version/licence-only tuple
+    would report it as no change at all.
+
+    Deliberately excluded: ``location`` (a file moving is not a governance event) and
+    ``findings`` (those shift as rules evolve, which would mark everything changed).
+    """
+    return (
+        c.provenance.version,
+        c.provenance.hash,
+        c.provenance.source,
+        c.provenance.author,
+        c.license.id,
+        c.license.risk,
+    )
 
 
 def diff_boms(old: AIBOM, new: AIBOM) -> BomDiff:

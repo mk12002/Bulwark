@@ -14,7 +14,7 @@ rules:
       has been altered in transit or at rest — a direct tampering/supply-chain signal.
     remediation: >-
       Do not load. Re-download from the authoritative source and re-verify the checksum.
-    references: ["OWASP:LLM05", "CWE-494", "CWE-354"]
+    references: ["OWASP:LLM03:2025", "CWE-494", "CWE-354"]
 
   - id: M7-no-model-card
     category: M7
@@ -29,7 +29,7 @@ rules:
       origin, training data, and intended use.
     remediation: >-
       Prefer models that ship a populated README/model card describing provenance.
-    references: ["OWASP:LLM05", "SLSA"]
+    references: ["OWASP:LLM03:2025", "SLSA"]
 
   - id: M7-no-hashes
     category: M7
@@ -44,4 +44,4 @@ rules:
       match what the author intended — the precondition for a supply-chain swap.
     remediation: >-
       Obtain and verify checksums (or a signature) for the weight files before loading.
-    references: ["OWASP:LLM05", "SLSA"]
+    references: ["OWASP:LLM03:2025", "SLSA"]

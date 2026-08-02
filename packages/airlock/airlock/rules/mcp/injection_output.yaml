@@ -15,7 +15,7 @@ rules:
     remediation: >-
       Constrain and validate tool output; treat returned content as untrusted data,
       never as instructions.
-    references: ["OWASP:LLM01"]
+    references: ["OWASP:LLM01:2025"]
 
   - id: P2-echo-instruction
     category: P2
@@ -30,4 +30,4 @@ rules:
       indirect-injection channel.
     remediation: >-
       Sanitize or clearly delimit external content before returning it to the agent.
-    references: ["OWASP:LLM01"]
+    references: ["OWASP:LLM01:2025"]

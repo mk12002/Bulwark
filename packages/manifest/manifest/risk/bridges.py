@@ -27,7 +27,7 @@ def _b5(component: Component, worst: Severity, source_tool: str, n: int) -> Find
         evidence=f"{n} {source_tool} finding(s) on '{component.name}' (worst: {worst.value})",
         rationale="A discovered component carries risk from a dedicated Bulwark scanner.",
         remediation=f"Review the inline {source_tool} findings on this component.",
-        references=["OWASP:LLM05", "OWASP:LLM06"],
+        references=["OWASP:LLM03:2025", "OWASP:LLM06:2025"],
         source="analyzer",
     )
 
@@ -79,8 +79,15 @@ def _warden_on_assemblies(bom: AIBOM, root: Path) -> list[Finding]:
         from warden.scanner import WardenScanner
     except ImportError:
         return []
-    # Any MCP client config or agent manifest in the project is an assembly.
-    candidates = [c for c in bom.components if c.type == ComponentType.MCP_SERVER and c.location]
+    # An assembly is any MCP client config *or* any discovered agent config
+    # (agent manifest / OpenAI Assistants / CrewAI). Both carry a location that an
+    # importer can parse; missing AGENT components here would silently skip Warden
+    # analysis for every non-MCP framework.
+    candidates = [
+        c
+        for c in bom.components
+        if c.type in (ComponentType.MCP_SERVER, ComponentType.AGENT) and c.location
+    ]
     locations = sorted({c.location for c in candidates if c.location})
     if not locations:
         return []

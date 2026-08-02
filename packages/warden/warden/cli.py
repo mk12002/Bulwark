@@ -13,7 +13,14 @@ from rich.panel import Panel
 from rich.table import Table
 
 from warden import __version__
-from warden.rules import RuleEngine, RuleLoadError, load_rules
+from warden.rules import (
+    KNOWN_SIGNALS,
+    RuleEngine,
+    RuleLoadError,
+    load_rules,
+    unknown_signals,
+    unused_signals,
+)
 
 app = typer.Typer(
     name="warden",
@@ -167,7 +174,21 @@ def rules_lint() -> None:
     except RuleLoadError as exc:
         _err.print(f"[bold red]Invalid rule pack:[/bold red] {exc}")
         raise typer.Exit(code=1) from exc
+
+    broken = unknown_signals(rules, set(KNOWN_SIGNALS))
+    if broken:
+        _err.print("[bold red]Rules match on signals no analyzer emits:[/bold red]")
+        for rule_id, signal in broken:
+            _err.print(f"  {rule_id}: signal {signal!r} is never produced")
+        raise typer.Exit(code=1)
+
     console.print(f"[green]OK[/green] — {len(rules)} rule(s) validated.")
+    dead = unused_signals(rules, set(KNOWN_SIGNALS))
+    if dead:
+        console.print(
+            f"[dim]note: {len(dead)} declared signal(s) unused by any rule: "
+            f"{', '.join(dead)}[/dim]"
+        )
 
 
 @app.command("version")

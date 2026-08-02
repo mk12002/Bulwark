@@ -14,7 +14,7 @@ rules:
       the agent is the signature of tool poisoning (prompt injection via metadata).
     remediation: >-
       Reject or sandbox this server and report the tool to the maintainer.
-    references: ["OWASP:LLM01", "MITRE-ATLAS"]
+    references: ["OWASP:LLM01:2025", "MITRE-ATLAS"]
 
   - id: P1-desc-sensitive-path
     category: P1
@@ -29,7 +29,7 @@ rules:
       exfiltration attempt embedded in tool metadata.
     remediation: >-
       Reject this server. A benign tool has no reason to name credential locations.
-    references: ["OWASP:LLM01", "MITRE-ATLAS"]
+    references: ["OWASP:LLM01:2025", "MITRE-ATLAS"]
 
   - id: P1-desc-references-other-tool
     category: P1
@@ -45,7 +45,7 @@ rules:
     remediation: >-
       Review the description; legitimate tools describe behaviour, they do not command
       the agent.
-    references: ["OWASP:LLM01"]
+    references: ["OWASP:LLM01:2025"]
 
   - id: P1-param-poisoning
     category: P1
@@ -60,4 +60,4 @@ rules:
       hide poisoning instructions.
     remediation: >-
       Reject or sandbox this server and report the tool to the maintainer.
-    references: ["OWASP:LLM01", "MITRE-ATLAS"]
+    references: ["OWASP:LLM01:2025", "MITRE-ATLAS"]

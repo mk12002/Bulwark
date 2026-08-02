@@ -83,8 +83,13 @@ or dependency (e.g. non-commercial model in a commercial product, copyleft confl
 **OSV**. **Detect:** `resolve/vulns.py`. **Ref:** OSV, CWE by advisory.
 
 **B5 — High-risk component (from Airlock/Warden).** *(inherited severity)* A model/MCP server Airlock
-flagged, or an assembly Warden flagged, surfaced inline on the component. **Detect:** `risk/*bridge.py`
-with `--scan-risk`. **Ref:** OWASP LLM05/LLM06.
+flagged, or an assembly Warden flagged, surfaced inline on the component. **Detect:** `risk/bridges.py`
+with `--scan-risk`. An "assembly" is any `mcp-server` **or `agent`** component with a location — the
+bridge previously considered only MCP configs, so a CrewAI crew or an OpenAI Assistants config was
+inventoried and then never audited. Severity is inherited from the worst imported finding, which is
+what makes `--fail-on` transitive through the composition; the roll-up is emitted only at HIGH or
+above, since M2/M4/M7 fire on essentially every real model and a roll-up on every component would be
+wallpaper. **Ref:** OWASP LLM03:2025 / LLM06:2025.
 
 **B6 — Dataset governance gap.** *(MEDIUM)* Dataset without documented source/license/consent
 (data-provenance / privacy relevance). **Ref:** NIST AI RMF, data governance.
@@ -147,6 +152,12 @@ class AIBOM(BaseModel):
 CycloneDX vulnerabilities/properties. Findings themselves remain `bulwark_core.Finding` objects in the
 `ScanResult`; the BOM references them by id.
 
+Two identity details matter. **`AIBOM.add` merges field-wise** by component key — two discoverers
+finding the same model (a `.py` reference and a notebook cell) is the normal case, so the merge fills
+missing provenance, prefers a concrete licence over `unknown`, and unions findings rather than
+first-writer-wins. And **models carry a purl** — `pkg:huggingface/org/name@revision` — so they are
+identifiable across tools and advisory feeds, not only libraries.
+
 ---
 
 ## 5. Resolution (provenance, licenses, vulns)
@@ -168,8 +179,16 @@ CycloneDX vulnerabilities/properties. Findings themselves remain `bulwark_core.F
 coverage summary and per-control status, are emitted under `meta["governance"]`, and are surfaced by
 `--govern`. Both are advisory (B9) and clearly labeled as guidance, not certification. `govern/report.py`
 emits a governance summary (with a dedicated "EU AI Act mapping (advisory)" section) + a **risk
-register** (component → risk → severity → recommended action) — exactly the artifact a security/GRC
-reviewer wants.
+register** (component → category → risk → severity → action → owner → status) — exactly the artifact
+a security/GRC reviewer wants. `owner` and `status` ship as template columns: Manifest cannot infer an
+owner from a repository, and a register without them is a list of complaints rather than something a
+team can track.
+
+Control status is **three-state** — `ok` (nothing mapped), `advisory` (worst mapped severity is
+LOW/MEDIUM), `gap` (HIGH/CRITICAL) — driven by the worst severity mapped to that control. A binary
+ok/gap flipped on a single LOW advisory, so a basically healthy project reported "gap" against all
+four NIST functions and the field carried no information. Severity already drives the fail threshold,
+the policy profiles, and the SARIF level; it drives this too.
 
 This is the intersection Mohit is positioning for: architecture + GRC. Keep the mapping transparent and
 sourced (cite the framework), never overclaim compliance.

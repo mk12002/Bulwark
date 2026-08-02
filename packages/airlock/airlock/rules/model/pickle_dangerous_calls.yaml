@@ -16,7 +16,7 @@ rules:
     remediation: >-
       Do not load this artifact. Obtain a safetensors version from a trusted source,
       or rebuild the model weights yourself.
-    references: ["OWASP:LLM05", "CWE-502"]
+    references: ["OWASP:LLM03:2025", "CWE-502"]
 
   - id: M1-pickle-network
     category: M1
@@ -31,4 +31,4 @@ rules:
       load, enabling exfiltration or remote payload retrieval.
     remediation: >-
       Do not load this artifact. Prefer safetensors weights from a trusted source.
-    references: ["OWASP:LLM05", "CWE-502"]
+    references: ["OWASP:LLM03:2025", "CWE-502"]

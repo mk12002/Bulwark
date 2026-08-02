@@ -28,7 +28,7 @@ def _result() -> ScanResult:
                 evidence="os.system",
                 rationale="rce",
                 remediation="do not load",
-                references=["OWASP:LLM05", "CWE-502"],
+                references=["OWASP:LLM03:2025", "CWE-502"],
             )
         ],
     )

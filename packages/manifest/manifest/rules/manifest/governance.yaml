@@ -40,7 +40,7 @@ rules:
       A restrictive (non-commercial), copyleft, or unknown license on a model/dataset/dep can
       make the whole system non-compliant when shipped.
     remediation: "Confirm the license and its compatibility with your intended use."
-    references: ["license-compliance"]
+    references: ["SPDX-License-List"]
 
   - id: B6-dataset-governance-gap
     category: B6
@@ -81,4 +81,4 @@ rules:
       An inline system prompt with no identifier/version is a change-management gap: it can
       change behaviour with no review trail.
     remediation: "Move prompts to versioned template files with stable identifiers."
-    references: ["governance-best-practice"]
+    references: ["NIST-AI-RMF"]

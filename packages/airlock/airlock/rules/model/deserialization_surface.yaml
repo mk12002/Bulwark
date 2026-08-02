@@ -47,7 +47,7 @@ rules:
     remediation: >-
       Review each unexpected import. A benign tensor pickle should only reference
       torch/numpy/collections; anything else warrants scrutiny before loading.
-    references: ["CWE-502", "OWASP:LLM05"]
+    references: ["CWE-502", "OWASP:LLM03:2025"]
 
   - id: M4-pickle-without-safetensors
     category: M4
@@ -62,4 +62,4 @@ rules:
       forcing consumers onto the unsafe loader.
     remediation: >-
       Publish and load a safetensors version of these weights.
-    references: ["best-practice"]
+    references: ["safetensors", "CWE-502"]

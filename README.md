@@ -14,7 +14,7 @@ from the individual components up to the governable whole.*
 [![CI](https://github.com/mk12002/Bulwark/actions/workflows/ci.yml/badge.svg)](https://github.com/mk12002/Bulwark/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-![Tests](https://img.shields.io/badge/tests-200%2B%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-270%2B%20passing-brightgreen.svg)
 ![Style](https://img.shields.io/badge/lint-ruff%20%2B%20mypy-informational.svg)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -58,7 +58,7 @@ pip install -r requirements.txt   # editable install of the whole workspace
 bulwark  scan ./project                              # inventory + Airlock/Warden risk + governance, in one shot
 bulwark  airlock scan model hf:org/name              # or drive each tool directly ↓
 
-airlock  scan model    hf:org/name                  # a HuggingFace model (pickle? safetensors? GGUF? ONNX? TF?)
+airlock  scan model    hf:org/name@rev              # a HuggingFace model, pinned to an immutable revision
 airlock  scan mcp      "python server.py"            # a live MCP server over stdio (or an sse/http URL)
 airlock  scan toolspec tools.json                    # OpenAI / Anthropic / LangChain tool definitions
 
@@ -165,11 +165,14 @@ Detection lives in **YAML rule packs**, not hardcoded — the community can exte
   of AI-supply-chain hygiene ("we scanned N public artifacts and X% were vulnerable").
 - **Hardened against its own inputs** — a scanner that ingests hostile files must not become the
   attack. Bulwark inspects **statically** (never `pickle.load`/`torch.load`/imports repo code), caps
-  every parse (opcode/size/member/decompression-bomb limits, bounded reads), rejects zip-slip in the
-  rule feed, bounds regex input to blunt ReDoS, and HTML-escapes all report output (no scanner-report
-  XSS). See [`SECURITY.md`](SECURITY.md).
-- **Green everywhere** — 5 packages, 200+ tests, ruff + mypy + pytest all passing via one command
-  (`python check.py`), matrixed in CI.
+  every parse (opcode/size/member/decompression-bomb limits, bounded reads), contains symlinks and
+  caps files when walking a target tree, bounds MCP connection time, rejects zip-slip in the rule
+  feed, bounds regex input to blunt ReDoS, and HTML-escapes all report output (no scanner-report
+  XSS). Two invariants are enforced by tests rather than discipline: core imports nothing from the
+  tools, and core never calls an execution primitive. See [`SECURITY.md`](SECURITY.md).
+- **Green everywhere** — 5 packages, 270+ tests, ruff + mypy + pytest all passing via one command
+  (`python check.py`), matrixed in CI. Releases are ordered (core first), **Sigstore-signed**, and
+  ship Bulwark's own AI-BOM as an artifact — the project applies its own advice to itself.
 
 ## Roadmap
 

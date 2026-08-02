@@ -292,6 +292,26 @@ def _finding_from(rule: Rule, target: str, signal: Signal, matched_value: Any) -
     )
 
 
+def unknown_signals(rules: Iterable[LoadedRule], known: set[str]) -> list[tuple[str, str]]:
+    """Return ``(rule_id, signal)`` for rules matching on a signal no analyzer emits.
+
+    Every other class of rule error fails loudly at load time — an unregistered
+    category, an unknown predicate, an invalid regex, a duplicate id. A mistyped
+    *signal name* is the one that fails **silently**: no rule matches, nothing errors,
+    and the detection is simply gone. Each tool declares the signals its analyzers
+    emit so ``rules lint`` can close that gap.
+    """
+    return sorted(
+        {(lr.rule.id, lr.rule.match.signal) for lr in rules if lr.rule.match.signal not in known}
+    )
+
+
+def unused_signals(rules: Iterable[LoadedRule], known: set[str]) -> list[str]:
+    """Return declared signals that no rule consumes (dead evidence, or a missing rule)."""
+    used = {lr.rule.match.signal for lr in rules}
+    return sorted(known - used)
+
+
 class RuleEngine:
     """Applies a set of loaded rules to a signal bundle to produce findings."""
 

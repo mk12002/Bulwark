@@ -21,7 +21,8 @@ nox.options.sessions = ["lint", "type", "test"]
 def lint(session: nox.Session) -> None:
     session.install("ruff")
     for pkg in PACKAGES:
-        session.run("ruff", "check", ".", external=True)
+        with session.chdir(f"packages/{pkg}"):
+            session.run("ruff", "check", ".", external=True)
 
 
 @nox.session

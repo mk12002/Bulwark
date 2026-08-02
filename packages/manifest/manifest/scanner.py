@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.findings import Finding, Location, ScanResult, dedupe
 from bulwark_core.rules import RuleEngine
 from bulwark_core.scanner import Scanner
 from bulwark_core.signals import SignalBundle
@@ -76,7 +76,7 @@ class ManifestScanner(Scanner):
             target=str(root),
             target_type="system",
             tool="manifest",
-            findings=_dedupe(findings),
+            findings=dedupe(findings),
             meta=meta,
         )
 
@@ -111,12 +111,3 @@ def _attach(findings: list[Finding], bom: AIBOM) -> None:
             component.findings.append(f.id)
 
 
-def _dedupe(findings: list[Finding]) -> list[Finding]:
-    seen: set[tuple[str, str | None, str | None, str]] = set()
-    out: list[Finding] = []
-    for f in findings:
-        key = (f.id, f.location.path, f.location.detail, f.evidence)
-        if key not in seen:
-            seen.add(key)
-            out.append(f)
-    return out

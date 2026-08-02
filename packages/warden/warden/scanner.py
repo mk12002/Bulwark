@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bulwark_core.findings import Finding, Location, ScanResult
+from bulwark_core.findings import Finding, Location, ScanResult, dedupe
 from bulwark_core.rules import RuleEngine
 from bulwark_core.scanner import Scanner
 from bulwark_core.severity import Severity
@@ -43,7 +43,7 @@ class WardenScanner(Scanner):
             target=target,
             target_type="agent",
             tool="warden",
-            findings=_dedupe(findings),
+            findings=dedupe(findings),
             score=agency_score(spec),
             meta={"agent_spec": spec.model_dump(mode="json")},
         )
@@ -74,14 +74,3 @@ class WardenScanner(Scanner):
         result = self.audit_spec(spec, target)
         result.meta["importer"] = importer
         return result
-
-
-def _dedupe(findings: list[Finding]) -> list[Finding]:
-    seen: set[tuple[str, str | None, str | None, str]] = set()
-    out: list[Finding] = []
-    for f in findings:
-        key = (f.id, f.location.path, f.location.detail, f.evidence)
-        if key not in seen:
-            seen.add(key)
-            out.append(f)
-    return out

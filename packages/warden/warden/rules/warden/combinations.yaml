@@ -15,7 +15,7 @@ rules:
     remediation: >-
       Split the source and sink across trust boundaries, drop one capability, or require
       human approval between reading sensitive data and any egress.
-    references: ["OWASP:LLM06", "OWASP:LLM02"]
+    references: ["OWASP:LLM06:2025", "OWASP:LLM02:2025"]
 
   - id: A2-injectable-exfil-flow
     category: A2
@@ -34,7 +34,7 @@ rules:
     remediation: >-
       Break the chain: isolate untrusted-input tools from crown-jewel sources and egress,
       require human approval between a sensitive read and any egress, or allow-list egress.
-    references: ["OWASP:LLM01", "OWASP:LLM06", "OWASP:LLM02"]
+    references: ["OWASP:LLM01:2025", "OWASP:LLM06:2025", "OWASP:LLM02:2025"]
 
   - id: A2-injectable-high-impact-action
     category: A2
@@ -51,7 +51,7 @@ rules:
     remediation: >-
       Add a human-in-the-loop gate on the high-impact tool, sandbox code/shell execution,
       or prevent untrusted-input tools from sharing a context with high-impact tools.
-    references: ["OWASP:LLM01", "OWASP:LLM06"]
+    references: ["OWASP:LLM01:2025", "OWASP:LLM06:2025"]
 
   - id: A5-unrestricted-egress
     category: A5
@@ -66,4 +66,4 @@ rules:
       data — the sink half of an exfiltration chain.
     remediation: >-
       Allow-list the specific hosts the agent must reach; deny all other egress.
-    references: ["OWASP:LLM02"]
+    references: ["OWASP:LLM02:2025"]

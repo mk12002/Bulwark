@@ -1,11 +1,29 @@
 # Example Airlock configuration. Copy to `airlock.toml` to use.
 # Everything here is optional — Airlock runs fully without any config.
+#
+# PRECEDENCE (highest first): CLI flags > environment variables > this file > defaults.
+# Environment wins over the file deliberately: env is the operator's channel (CI,
+# containers), while a committed config file may be controlled by the very repository
+# being scanned and must never be able to weaken a pipeline's settings.
+#
+# Any key here can also be set via the environment with an AIRLOCK_ prefix; nested
+# keys use a double underscore:
+#   AIRLOCK_FAIL_ON=critical
+#   AIRLOCK_AI__ENABLED=true
+#
+# Warden and Manifest read `warden.toml` and `manifest.toml` with the same layering
+# and the WARDEN_ / MANIFEST_ prefixes.
 
 # Exit non-zero when any finding is at or above this severity (CLI --fail-on overrides).
 fail_on = "high"
 
 # Default report format (CLI --format overrides): terminal | json | html | sarif
 output_format = "terminal"
+
+# Fickling-style allowlist mode as a durable posture (same as passing --strict).
+# Flags pickle imports from modules outside the ML allowlist, catching novel callables
+# a denylist has never seen. Off by default to stay noise-free.
+strict_allowlist = false
 
 # --- Waivers -----------------------------------------------------------------
 # Suppress findings by rule-id glob or by location-path glob. Suppressed findings
@@ -30,8 +48,24 @@ provider = "ollama"
 model = "qwen2.5-coder"
 base_url = "http://localhost:11434"
 
-# Cap the number of findings enriched per scan (caps calls -> caps cost).
+# Caps EVERY provider call per scan — semantic recall, per-finding triage, the
+# executive summary, and the model-card read all share this one counter, so the
+# documented cap is the real cap.
 max_findings_to_enrich = 25
 
-# The API key is NEVER read from this file. Set it in the environment instead:
+# The API key is NEVER read from this file — AIConfig has no api_key field at all, so
+# there is nowhere here to put one. Set it in the environment instead:
 #   export AIRLOCK_AI_API_KEY=sk-...
+
+# --- Resource limits (environment-only) --------------------------------------
+# Every parse is bounded; a malformed value falls back to the default rather than
+# disabling the control. Defaults are generous for real models but fatal to bombs.
+#   AIRLOCK_LIMIT_PICKLE_OPCODES=2000000
+#   AIRLOCK_LIMIT_ARCHIVE_MEMBERS=20000
+#   AIRLOCK_LIMIT_UNCOMPRESSED_BYTES=4294967296
+#   AIRLOCK_LIMIT_COMPRESSION_RATIO=100
+#   AIRLOCK_LIMIT_MEMBER_BYTES=536870912
+#   AIRLOCK_LIMIT_NESTED_BLOB_BYTES=8388608
+#   AIRLOCK_LIMIT_MAX_FILES=100000          # files walked in a target tree
+#   AIRLOCK_LIMIT_CONNECT_TIMEOUT=20        # seconds for a live MCP scan
+#   AIRLOCK_STATE_DIR=~/.airlock            # rug-pull baseline store (set in CI)

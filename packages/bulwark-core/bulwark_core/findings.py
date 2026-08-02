@@ -92,3 +92,49 @@ class ScanResult(BaseModel):
             self.findings,
             key=lambda f: (-f.severity.rank, f.category, f.id),
         )
+
+
+# --------------------------------------------------------------------------- #
+# Finding identity
+# --------------------------------------------------------------------------- #
+
+FindingKey = tuple[str, str | None, str | None, str]
+
+
+def finding_key(f: Finding) -> FindingKey:
+    """The canonical identity of a finding: rule id + location + evidence.
+
+    **This is the single definition of "the same finding"** and three subsystems
+    depend on it meaning one thing:
+
+    - :func:`dedupe` — collapsing duplicate findings within one scan;
+    - :mod:`bulwark_core.postprocess` — matching a stored baseline, so a
+      regression-only scan reports only what is new;
+    - :mod:`bulwark_core.report.sarif` — ``partialFingerprints``, which is how code
+      scanning recognises an alert across runs and keeps it dismissed.
+
+    Changing this tuple therefore invalidates every existing baseline file *and*
+    resurrects every dismissed code-scanning alert — two silent consequences. Keep
+    it here, and keep it stable.
+
+    Severity and rationale are deliberately excluded: both are derived from the rule,
+    so including them would add nothing and couple identity to wording.
+    """
+    return (f.id, f.location.path, f.location.detail, f.evidence)
+
+
+def dedupe(findings: list[Finding]) -> list[Finding]:
+    """Drop findings with an identical :func:`finding_key`, preserving order.
+
+    Needed because analyzers can legitimately double-report: the format-confusion
+    analyzer re-runs the pickle disassembler on a file whose extension lies, so a
+    payload is discovered twice by design.
+    """
+    seen: set[FindingKey] = set()
+    unique: list[Finding] = []
+    for f in findings:
+        key = finding_key(f)
+        if key not in seen:
+            seen.add(key)
+            unique.append(f)
+    return unique

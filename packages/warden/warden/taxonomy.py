@@ -51,7 +51,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "shell, wildcard network, or '*' resource scopes."
         ),
         default_severity=Severity.MEDIUM,
-        references=("OWASP:LLM06", "CWE-269"),
+        references=("OWASP:LLM06:2025", "CWE-269"),
     ),
     CategoryInfo(
         code="A2",
@@ -62,7 +62,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "source reachable to an egress sink (the flagship confused-deputy check)."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM06", "OWASP:LLM02"),
+        references=("OWASP:LLM06:2025", "OWASP:LLM02:2025"),
     ),
     CategoryInfo(
         code="A3",
@@ -73,7 +73,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "confirmation or approval gate."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM06",),
+        references=("OWASP:LLM06:2025",),
     ),
     CategoryInfo(
         code="A4",
@@ -84,7 +84,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "injectable/ambiguous."
         ),
         default_severity=Severity.MEDIUM,
-        references=("OWASP:LLM01", "OWASP:LLM06"),
+        references=("OWASP:LLM01:2025", "OWASP:LLM06:2025"),
     ),
     CategoryInfo(
         code="A5",
@@ -95,7 +95,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "in the presence of a sensitive source."
         ),
         default_severity=Severity.HIGH,
-        references=("OWASP:LLM02",),
+        references=("OWASP:LLM02:2025",),
     ),
     CategoryInfo(
         code="A6",
@@ -105,7 +105,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "API keys/tokens embedded in configs or broadly injected into many tools' environments."
         ),
         default_severity=Severity.HIGH,
-        references=("CWE-798", "OWASP:LLM02"),
+        references=("CWE-798", "OWASP:LLM02:2025"),
     ),
     CategoryInfo(
         code="A7",
@@ -116,7 +116,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "whole-drive context) than its stated purpose requires."
         ),
         default_severity=Severity.MEDIUM,
-        references=("OWASP:LLM06",),
+        references=("OWASP:LLM06:2025",),
     ),
     CategoryInfo(
         code="A8",
@@ -135,7 +135,7 @@ _CATEGORIES: list[CategoryInfo] = [
             "(scan them with --scan-parts)."
         ),
         default_severity=Severity.MEDIUM,
-        references=("OWASP:LLM05",),
+        references=("OWASP:LLM03:2025",),
     ),
     CategoryInfo(
         code="A10",
@@ -143,7 +143,7 @@ _CATEGORIES: list[CategoryInfo] = [
         title="No runaway guards",
         description=("An autonomous/looping agent with no iteration cap, budget, or timeout."),
         default_severity=Severity.MEDIUM,
-        references=("OWASP:LLM06",),
+        references=("OWASP:LLM06:2025",),
     ),
 ]
 

@@ -14,7 +14,7 @@ rules:
       on load — a hallmark of an embedded payload.
     remediation: >-
       Do not load this artifact. Prefer safetensors weights from a trusted source.
-    references: ["OWASP:LLM05", "CWE-502"]
+    references: ["OWASP:LLM03:2025", "CWE-502"]
 
   - id: M3-pickle-dynamic-code
     category: M3
@@ -29,7 +29,7 @@ rules:
       obfuscated payload inside a pickle stream.
     remediation: >-
       Do not load this artifact. Prefer safetensors weights from a trusted source.
-    references: ["OWASP:LLM05", "CWE-502"]
+    references: ["OWASP:LLM03:2025", "CWE-502"]
 
   - id: M3-suspicious-string
     category: M3
@@ -44,4 +44,4 @@ rules:
       strong indicators of a staged payload.
     remediation: >-
       Do not load this artifact. Investigate the source before trusting these weights.
-    references: ["OWASP:LLM05"]
+    references: ["OWASP:LLM03:2025"]

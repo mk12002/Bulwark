@@ -25,16 +25,23 @@ jobs:
           python-version: "3.11"
 
       # Install siblings first (path deps), then this package with dev extras.
+      # No `|| fallback` on the extras: a silently degraded install turns real
+      # failures into skipped tests, which is the worst outcome in a security gate.
       - name: Install workspace
         working-directory: .
         run: |
           python -m pip install --upgrade pip
-          pip install -e packages/bulwark-core
-          pip install -e "packages/airlock[dev,model,mcp]" || pip install -e packages/airlock
-          pip install -e "packages/warden[dev]" || pip install -e packages/warden
-          pip install -e "packages/manifest[dev]" || pip install -e packages/manifest
-          pip install -e packages/bulwark
-          pip install ruff mypy pytest pytest-cov
+          pip install -e "packages/bulwark-core[dev]"
+          pip install -e "packages/airlock[dev,model,mcp,ai]"
+          pip install -e "packages/warden[dev]"
+          pip install -e "packages/manifest[dev,osv]"
+          pip install -e "packages/bulwark[dev]"
+
+      # Pinned: an unpinned lint/type/test toolchain means a third-party release can
+      # break the build with no change on our side — exactly the reproducibility gap
+      # Manifest's own B1 finding reports on other people's projects.
+      - name: Install the pinned toolchain
+        run: pip install "ruff==0.15.20" "mypy==2.1.0" "pytest==9.1.1" "pytest-cov==7.1.0"
 
       - name: Ruff lint
         run: ruff check .

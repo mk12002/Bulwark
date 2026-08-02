@@ -20,7 +20,7 @@ from bulwark_core.limits import DEFAULT_LIMITS, Limits, read_bounded
 from bulwark_core.signals import SignalBundle
 
 from airlock.scanners.model.loader import ArtifactFile
-from airlock.scanners.model.pickle_scan import analyze_stream
+from airlock.scanners.model.pickle_scan import analyze_stream, emit_analyses
 
 _NPY_MAGIC = b"\x93NUMPY"
 _HDF5_MAGIC = b"\x89HDF\r\n\x1a\n"
@@ -60,27 +60,25 @@ def _parse_npy_object_pickle(data: bytes, limits: Limits) -> bytes | None:
     return payload[: limits.max_member_bytes] if payload else None
 
 
-def _emit_pickle(label: str, blob: bytes, bundle: SignalBundle, limits: Limits) -> None:
-    """Run pickle inspection over an embedded stream and emit the usual signals."""
+def _emit_pickle(
+    label: str, blob: bytes, bundle: SignalBundle, limits: Limits, *, strict: bool = False
+) -> None:
+    """Run pickle inspection over an embedded stream and emit the usual signals.
+
+    Delegates to :func:`~airlock.scanners.model.pickle_scan.emit_analyses` so an
+    embedded pickle produces the *identical* signal set to a standalone one —
+    including ``pickle.unexpected_module`` under ``--strict``. Emitting these signals
+    locally would make allowlist coverage depend on the container rather than the
+    payload, which is exactly the inconsistency format-confusion attacks exploit.
+    """
     bundle.add("model.pickle_file", label, path=label, evidence=f"embedded pickle in {label}")
     analysis = analyze_stream(blob, limits)
-    if analysis.has_reduce:
-        bundle.add("pickle.has_reduce", True, path=label)
-    for name, pos in analysis.imports:
-        bundle.add(
-            "pickle.imports",
-            name,
-            path=label,
-            detail=f"opcode@{pos}" if pos >= 0 else None,
-            evidence=name,
-        )
-    for name in analysis.nested_imports:
-        bundle.add("pickle.imports", name, path=label, detail="nested-base64", evidence=name)
-    for s in analysis.strings:
-        bundle.add("pickle.strings", s, path=label, evidence=" ".join(s.split()))
+    emit_analyses(label, {"": analysis}, bundle, strict=strict)
 
 
-def _collect_numpy(file: ArtifactFile, bundle: SignalBundle, limits: Limits) -> None:
+def _collect_numpy(
+    file: ArtifactFile, bundle: SignalBundle, limits: Limits, *, strict: bool = False
+) -> None:
     if file.suffix == ".npz":
         # A .npz is a zip; open it from disk (streamed, seeks the central directory)
         # rather than slurping it into memory, and cap each member.
@@ -94,7 +92,9 @@ def _collect_numpy(file: ArtifactFile, bundle: SignalBundle, limits: Limits) -> 
                         continue
                     blob = _parse_npy_object_pickle(zf.read(info), limits)
                     if blob:
-                        _emit_pickle(f"{file.relpath}::{info.filename}", blob, bundle, limits)
+                        _emit_pickle(
+                            f"{file.relpath}::{info.filename}", blob, bundle, limits, strict=strict
+                        )
         except (zipfile.BadZipFile, OSError):
             return
         return
@@ -106,7 +106,7 @@ def _collect_numpy(file: ArtifactFile, bundle: SignalBundle, limits: Limits) -> 
         return
     blob = _parse_npy_object_pickle(raw, limits)
     if blob:
-        _emit_pickle(f"{file.relpath} (object array)", blob, bundle, limits)
+        _emit_pickle(f"{file.relpath} (object array)", blob, bundle, limits, strict=strict)
 
 
 # --------------------------------------------------------------------------- #
@@ -235,12 +235,16 @@ def _collect_tensorflow(file: ArtifactFile, bundle: SignalBundle) -> None:
 
 
 def collect(
-    files: list[ArtifactFile], bundle: SignalBundle, limits: Limits = DEFAULT_LIMITS
+    files: list[ArtifactFile],
+    bundle: SignalBundle,
+    limits: Limits = DEFAULT_LIMITS,
+    *,
+    strict: bool = False,
 ) -> None:
     """Dispatch each non-pickle serialized file to its analyzer."""
     for file in files:
         if file.is_numpy:
-            _collect_numpy(file, bundle, limits)
+            _collect_numpy(file, bundle, limits, strict=strict)
         elif file.is_keras:
             _collect_keras(file, bundle)
         elif file.is_onnx:

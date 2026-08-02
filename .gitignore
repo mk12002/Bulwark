@@ -36,3 +36,6 @@ datasets/
 
 # Draft blog posts / marketing content (not committed)
 blogs/
+
+# Local engineering handbook / study notes (not committed)
+bulwark_breakdown/

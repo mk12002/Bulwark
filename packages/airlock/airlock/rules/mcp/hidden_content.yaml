@@ -14,4 +14,4 @@ rules:
       instructions the human reviewer never sees but the model still reads.
     remediation: >-
       Reject the server. Legitimate tool names and descriptions use plain visible text.
-    references: ["CWE-176", "OWASP:LLM01"]
+    references: ["CWE-176", "OWASP:LLM01:2025"]
