@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bulwark-core"
-version = "0.1.0"
+version = "0.2.0"
 description = "Shared spine for the Bulwark security stack: findings model, rule engine, reporters, AI layer."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -44,12 +44,12 @@ Repository = "https://github.com/mk12002/Bulwark"
 Changelog = "https://github.com/mk12002/Bulwark/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["bulwark_core"]
+packages = ["src/bulwark_core"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["bulwark_core", "tests"]
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
@@ -74,5 +74,5 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.coverage.run]
-source = ["bulwark_core"]
+source = ["src/bulwark_core"]
 branch = true

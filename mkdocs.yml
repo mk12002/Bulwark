@@ -1,0 +1,116 @@
+site_name: Bulwark
+site_description: The security stack for agentic AI — scan the parts, the assembly, and the whole system.
+site_url: https://mk12002.github.io/Bulwark/
+repo_url: https://github.com/mk12002/Bulwark
+repo_name: mk12002/Bulwark
+edit_uri: edit/main/docs/
+copyright: Apache-2.0
+
+theme:
+  name: material
+  icon:
+    logo: material/shield-check
+    repo: fontawesome/brands/github
+  palette:
+    # Respect the reader's OS setting first, with a manual toggle.
+    - media: "(prefers-color-scheme)"
+      toggle: { icon: material/brightness-auto, name: Follow system }
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle: { icon: material/brightness-7, name: Dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle: { icon: material/brightness-4, name: Light mode }
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+
+# Several pages are canonical GitHub documents included via pymdownx.snippets
+# (BULWARK.md, SECURITY.md, USAGE.md…). Their relative links are correct *on GitHub*
+# and cannot resolve inside the site tree, so unrecognized links are downgraded to
+# info. Everything that indicates a genuinely broken site — a nav entry pointing at a
+# missing file, an absolute link, a page absent from the nav — stays an error, so
+# `--strict` still catches real breakage.
+validation:
+  # Structural problems stay errors under --strict: a nav entry pointing at a missing
+  # page is a broken site.
+  nav:
+    omitted_files: info
+    not_found: warn
+    absolute_links: warn
+  # Link targets outside the site tree are expected here and correct on GitHub.
+  links:
+    not_found: info
+    unrecognized_links: info
+    absolute_links: info
+    anchors: info
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: installation.md
+      - Quick start: quickstart.md
+  - Guides:
+      - Scanning models: guides/models.md
+      - Scanning MCP servers: guides/mcp.md
+      - Auditing agents: guides/agents.md
+      - Generating an AI-BOM: guides/bom.md
+      - CI integration: guides/ci.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Python API: reference/api.md
+      - Taxonomy: reference/taxonomy.md
+      - Configuration: reference/configuration.md
+  - Understanding:
+      - Architecture: architecture.md
+      - Threat model: threat-model.md
+      - Validation: validation.md
+  - Project:
+      - Contributing: contributing.md
+      - Security policy: security.md
+      - Changelog: changelog.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/mk12002/Bulwark

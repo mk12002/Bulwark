@@ -6,6 +6,7 @@ from pathlib import Path
 
 from bulwark_core.findings import Finding, Location
 from bulwark_core.severity import Severity
+
 from warden.bridge import scan_wired_parts
 from warden.importers import import_agent
 from warden.spec.model import AgentSpec, Capability
@@ -52,6 +53,7 @@ def test_crewai_import() -> None:
 def test_framework_specs_flag_toxic_combination() -> None:
     """CrewAI fixture (read secrets + post webhook) should trip A2/A5 when audited."""
     from bulwark_core.rules import RuleEngine
+
     from warden.rules import load_rules
     from warden.scanner import WardenScanner
 
@@ -103,6 +105,7 @@ def test_scan_wired_parts_degrades_on_error() -> None:
 
 def test_scan_parts_flag_via_scanner() -> None:
     from bulwark_core.rules import RuleEngine
+
     from warden.rules import load_rules
     from warden.scanner import WardenScanner
 

@@ -6,6 +6,64 @@ All notable changes to Bulwark are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-07
+
+Productionisation release: the suite becomes installable software rather than a
+repository. Five packages move to a `src/` layout, gain structured logging, a
+documentation site, runnable examples, and supply-chain hardening of the project
+itself — alongside a large correctness pass.
+
+**Upgrading from 0.1.0:** no API breaks. `airlock.toml` now actually takes effect, which
+is a behaviour change if you had a config file that was previously being ignored — check
+that its `fail_on` and `suppress_rules` are what you intend before upgrading a gate.
+
+### Added
+- **`src/` layout** for all five packages (`packages/<name>/src/<name>/`). Imports now
+  resolve to the installed wheel rather than the working directory, which is what
+  surfaces a data file missing from a distribution. Verified: all 18 rule packs and the
+  HTML template ship inside the wheels, and `pip install airlock` works standalone from
+  a wheel with no workspace present.
+- **Structured logging** (`bulwark_core.logging`), with `-v` / `-vv` on every CLI.
+  Diagnostics go to **stderr only**, so `--format json > out.json` stays valid at any
+  verbosity; as a library, Bulwark emits nothing until an application calls
+  `configure()`. Artifact-derived text is single-lined and truncated before it can reach
+  a log record, so a hostile description cannot forge log lines.
+- **`examples/`** — five runnable scripts covering the Python API for all three tools,
+  custom rule packs, and the least-privilege recommender. Exercised by CI, so they
+  cannot rot.
+- **Documentation site** (MkDocs Material) with installation, quick start, guides, CLI
+  and Python API reference, taxonomy, configuration, architecture, and threat model.
+  Builds under `--strict`; published to GitHub Pages.
+- **`load_rules(extra_roots=...)`** in all three tools — the documented "layer your own
+  rule packs" story was previously not expressible from Python, only by replacing the
+  built-in roots entirely.
+- **`airlock rules debug <kind> <target>`** — dumps the signal bundle for a target.
+  "Is the evidence there?" is the first question when a rule stops firing, and it
+  previously required a fifteen-line script.
+- **CodeQL** analysis and **Dependabot** grouped update policy.
+- Suite-wide invariant tests: version agreement between `pyproject.toml` and
+  `__version__`, `src/` layout, and wheel-content declarations.
+
+### Fixed
+- **Snake_case tool names were not classified.** `_` is a regex word character, so
+  `\bbrowse\b` never matched `browse_web` and `\bshell\b` never matched `run_shell` —
+  meaning Warden's flagship CRITICAL finding (an attacker-triggerable exfiltration flow)
+  silently did not fire on the naming convention the ecosystem actually uses. Tool text
+  is now matched against a de-snaked copy as well as the raw form.
+- **The CRITICAL injectable-exfiltration flow ignored gates on the sink**, while the
+  sibling injectable-action check credited them. A declared approval gate breaks the
+  automated chain, so the two escalations now agree — and the recommender's advice
+  measurably clears the finding.
+- **`\bopen\b` classified "open a support ticket" as filesystem read.** Third instance
+  of the verb-without-a-domain-noun pattern, after `\bformat\b` and `\bsandbox\b`; now
+  requires a filesystem noun.
+
+### Changed
+- All five packages are at **0.2.0** and release in lockstep from one tag.
+- `check.py`, `noxfile.py`, and CI type-check `src/<module>` paths.
+
+## [0.1.1] — 2026-08-02
+
 ### Fixed
 - **Configuration files were silently ignored.** `airlock.toml` was read, parsed, and then discarded:
   the merge helper recursed into nested tables but never assigned a scalar, so `fail_on`,

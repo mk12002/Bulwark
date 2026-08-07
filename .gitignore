@@ -39,3 +39,6 @@ blogs/
 
 # Local engineering handbook / study notes (not committed)
 bulwark_breakdown/
+
+# MkDocs build output
+site/

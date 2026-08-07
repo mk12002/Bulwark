@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from bulwark_core.findings import (
     Finding,
     Location,

@@ -17,6 +17,7 @@ import importlib.util
 from pathlib import Path
 
 import pytest
+
 from airlock.rules import RuleEngine, load_rules
 from airlock.scanners.model import ModelScanner
 

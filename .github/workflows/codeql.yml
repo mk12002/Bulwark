@@ -1,0 +1,51 @@
+name: CodeQL
+
+# Static analysis of Bulwark itself.
+#
+# This project's whole argument is that people ship code they have not inspected. It
+# would be incoherent to make that argument without submitting to the same scrutiny —
+# so CodeQL runs on every change and weekly, and its findings land in the same Security
+# tab as Airlock's own SARIF output.
+#
+# `security-and-quality` rather than the default query set: the default suite is tuned
+# for signal on large codebases, and on 10k lines the extra queries are affordable.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so a newly published query finds an old bug without waiting for a commit.
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      security-events: write # upload results to code scanning
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"

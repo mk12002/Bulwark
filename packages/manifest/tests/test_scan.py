@@ -6,10 +6,11 @@ from pathlib import Path
 
 from bulwark_core.rules import RuleEngine
 from bulwark_core.severity import Severity
+from typer.testing import CliRunner
+
 from manifest.cli import app
 from manifest.rules import load_rules
 from manifest.scanner import ManifestScanner
-from typer.testing import CliRunner
 
 runner = CliRunner()
 

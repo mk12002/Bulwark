@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "warden"
-version = "0.1.0"
+version = "0.2.0"
 description = "Least-privilege auditor for AI agents — scan the assembly (part of the Bulwark suite)."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -51,12 +51,12 @@ Issues = "https://github.com/mk12002/Bulwark/issues"
 Changelog = "https://github.com/mk12002/Bulwark/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["warden"]
+packages = ["src/warden"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["warden", "tests"]
+src = ["src", "tests"]
 extend-exclude = ["fixtures"]  # fixtures are intentionally partial/inert sample configs
 
 [tool.ruff.lint]

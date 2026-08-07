@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 
 import pytest
-from airlock.config import AIConfig
 from bulwark_core.ai.enrich import enrich, run_enrichment
 from bulwark_core.ai.provider import AIError, AIProvider, build_provider
 from bulwark_core.findings import Finding, Location, ScanResult
 from bulwark_core.severity import Severity
+
+from airlock.config import AIConfig
 
 
 @pytest.fixture(autouse=True)

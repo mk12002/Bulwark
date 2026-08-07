@@ -44,7 +44,10 @@ _LEXICON: dict[Capability, list[str]] = {
     ],
     Capability.FS_READ: [
         r"read[_ ]?file",
-        r"\bopen\b",
+        # "open" needs a filesystem noun: bare \bopen\b matched "open a support
+        # ticket", "open a pull request", "open a connection" — the same
+        # verb-without-a-domain-noun mistake as \bformat\b and \bsandbox\b.
+        r"\bopen(s|ing|ed)?\b[^.]{0,30}\b(file|path|dir|directory|disk|folder)\b",
         r"\bcat\b",
         r"list[_ ]?(dir|files)",
         r"\bglob\b",
@@ -140,10 +143,25 @@ _SENSITIVE_KINDS = {"secret", "secrets", "env", "credential", "credentials", "va
 
 
 def _tool_text(tool: Tool) -> str:
+    """The searchable text for a tool: its raw fields *plus* a de-snaked copy.
+
+    Tool names are overwhelmingly ``snake_case``, and ``_`` is a regex word character —
+    so ``\\bbrowse\\b`` does **not** match ``browse_web``, and ``\\bshell\\b`` does not
+    match ``run_shell``. Several capabilities were therefore silently unclassifiable
+    under the naming convention the ecosystem actually uses, which in turn meant
+    Warden's flagship CRITICAL finding (an attacker-triggerable exfiltration flow) did
+    not fire on an agent wiring a tool called ``browse_web``.
+
+    Appending an underscore/hyphen-normalized copy makes word-boundary patterns work on
+    snake_case without weakening them, and without touching the literal patterns
+    (``exec_cmd``, ``run_shell``) that match the raw form.
+    """
     parts = [tool.name, tool.description or "", " ".join(tool.scopes)]
     if tool.source:
         parts.append(tool.source)
-    return "\n".join(parts)
+    raw = "\n".join(parts)
+    desnaked = raw.replace("_", " ").replace("-", " ")
+    return raw if desnaked == raw else f"{raw}\n{desnaked}"
 
 
 def classify_tool(tool: Tool) -> set[Capability]:

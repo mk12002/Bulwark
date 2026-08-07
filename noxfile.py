@@ -30,7 +30,7 @@ def type(session: nox.Session) -> None:  # noqa: A001 - session name is intentio
     session.install("mypy")
     for pkg in PACKAGES:
         with session.chdir(f"packages/{pkg}"):
-            session.run("mypy", IMPORT_DIR.get(pkg, pkg))
+            session.run("mypy", f"src/{IMPORT_DIR.get(pkg, pkg)}")
 
 
 @nox.session

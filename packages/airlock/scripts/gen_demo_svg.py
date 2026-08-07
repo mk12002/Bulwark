@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from airlock.rules import RuleEngine, load_rules
-from airlock.scanners.model import ModelScanner
 from bulwark_core.report.terminal import render_terminal
 from rich.console import Console
+
+from airlock.rules import RuleEngine, load_rules
+from airlock.scanners.model import ModelScanner
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT = REPO_ROOT / "docs" / "demo.svg"

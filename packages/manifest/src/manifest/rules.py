@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from pathlib import Path
 
 from bulwark_core.rules import (
@@ -40,8 +41,24 @@ def user_rules_dir() -> Path:
     return Path(override) if override else Path.home() / ".manifest" / "rules"
 
 
-def load_rules(rules_dir: Path | None = None) -> list[LoadedRule]:
+def load_rules(
+    rules_dir: Path | None = None,
+    *,
+    extra_roots: Sequence[Path] | None = None,
+) -> list[LoadedRule]:
+    """Load rule packs: packaged + user by default.
+
+    ``rules_dir`` *replaces* the default roots — use it to load one directory in
+    isolation, which is what the test suite does.
+
+    ``extra_roots`` *appends* to them, which is the documented way to layer your own
+    organisation's packs on top of the built-ins from Python. Duplicate rule ids across
+    roots are a hard error rather than a silent override, so a local pack cannot shadow
+    (and thereby disable) a built-in detection.
+    """
     roots = [rules_dir] if rules_dir is not None else [default_rules_dir(), user_rules_dir()]
+    if extra_roots:
+        roots.extend(extra_roots)
     return load_rule_dirs(roots)
 
 

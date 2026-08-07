@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-CORE_ROOT = Path(__file__).resolve().parents[1] / "bulwark_core"
+CORE_ROOT = Path(__file__).resolve().parents[1] / "src" / "bulwark_core"
 SUITE_PACKAGES = {"airlock", "warden", "manifest", "bulwark"}
 
 

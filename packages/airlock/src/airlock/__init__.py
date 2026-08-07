@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Register Airlock's M*/P* categories into the shared bulwark_core registry so
 # rule-category validation and report lookups work for any `import airlock`.

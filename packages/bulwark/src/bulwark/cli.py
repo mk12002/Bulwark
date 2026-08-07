@@ -17,7 +17,8 @@ from __future__ import annotations
 import sys
 
 import typer
-from rich.console import Console
+from bulwark_core.logging import configure as configure_logging
+from bulwark_core.report.console import err_console
 
 from bulwark import __version__
 
@@ -38,7 +39,21 @@ app.add_typer(airlock_app, name="airlock", help="Scan the parts: models, MCP ser
 app.add_typer(warden_app, name="warden", help="Scan the assembly: agent least-privilege.")
 app.add_typer(manifest_app, name="manifest", help="Inventory the system: AI-BOM + governance.")
 
-_err = Console(stderr=True)
+_err = err_console()
+
+@app.callback()
+def _root(
+    verbose: int = typer.Option(
+        0,
+        "--verbose",
+        "-v",
+        count=True,
+        help="Diagnostics to stderr: -v for progress, -vv for detail. Never touches stdout.",
+    ),
+) -> None:
+    """Configure logging before any subcommand runs."""
+    configure_logging(verbose)
+
 
 
 @app.command("scan")

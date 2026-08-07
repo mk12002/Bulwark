@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from bulwark_core.rules import RuleEngine
+
 from manifest.bom.cyclonedx import to_cyclonedx
 from manifest.bom.model import AIBOM, Component, ComponentType
 from manifest.bom.vex import to_vex

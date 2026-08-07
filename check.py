@@ -21,7 +21,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 PACKAGES = ["bulwark-core", "airlock", "warden", "manifest", "bulwark"]
 # Import package (directory to type-check) differs from the distribution name.
+# Packages use a src/ layout, so the module lives at src/<import name>.
 IMPORT_DIR = {"bulwark-core": "bulwark_core"}
+
+
+def import_path(pkg: str) -> str:
+    """The path mypy should type-check for a package (src/ layout)."""
+    return f"src/{IMPORT_DIR.get(pkg, pkg)}"
 
 
 def _python() -> str:
@@ -49,12 +55,11 @@ def main() -> int:
         pkg_dir = ROOT / "packages" / pkg
         if not pkg_dir.exists():
             continue
-        import_dir = IMPORT_DIR.get(pkg, pkg)
 
         results.append((pkg, "ruff", run(f"ruff {pkg}", [py, "-m", "ruff", "check", "."], pkg_dir)))
         if not fast:
             results.append(
-                (pkg, "mypy", run(f"mypy {pkg}", [py, "-m", "mypy", import_dir], pkg_dir))
+                (pkg, "mypy", run(f"mypy {pkg}", [py, "-m", "mypy", import_path(pkg)], pkg_dir))
             )
         # bulwark-core has no dedicated test suite (exercised via the tools).
         if (pkg_dir / "tests").exists():

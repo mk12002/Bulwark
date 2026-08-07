@@ -1,0 +1,49 @@
+# Dependency updates.
+#
+# A security tool that flags unpinned dependencies (B1) and known-vulnerable ones (B4)
+# should not carry either itself. Each package is watched separately because this is a
+# uv workspace of five independently-installable distributions, not one project.
+#
+# Grouping keeps the PR volume reviewable: a scanner with a noisy update stream gets
+# its PRs rubber-stamped, which defeats the purpose.
+version: 2
+
+updates:
+  - package-ecosystem: "pip"
+    directories:
+      - "/packages/bulwark-core"
+      - "/packages/airlock"
+      - "/packages/warden"
+      - "/packages/manifest"
+      - "/packages/bulwark"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "deps"
+    groups:
+      # The lint/type/test toolchain moves together and is pinned in CI, so a bump
+      # here must land alongside the CI pin — one PR keeps them in step.
+      dev-toolchain:
+        patterns: ["ruff", "mypy", "pytest", "pytest-cov", "types-*"]
+      # Runtime dependencies grouped by risk of breaking behaviour.
+      runtime:
+        patterns: ["pydantic*", "typer", "rich", "jinja2", "pyyaml", "httpx"]
+      # The MCP SDK is the highest-churn dependency in the suite and the protocol is
+      # still moving, so it gets its own PR rather than being batched.
+      mcp-sdk:
+        patterns: ["mcp"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["ci"]
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]

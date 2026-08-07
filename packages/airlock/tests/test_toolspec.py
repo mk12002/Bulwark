@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from airlock.rules import RuleEngine, load_rules
 from airlock.scanners.mcp import MCPScanner
 from airlock.scanners.toolspec import ToolSpecError, load_toolspec
@@ -140,8 +141,9 @@ def test_loader_bad_yaml_raises(tmp_path: Path) -> None:
 
 
 def test_cli_scan_toolspec_gates() -> None:
-    from airlock.cli import app
     from typer.testing import CliRunner
+
+    from airlock.cli import app
 
     runner = CliRunner()
     result = runner.invoke(

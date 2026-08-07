@@ -11,9 +11,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from bulwark_core.findings import Finding, Location
+from bulwark_core.logging import get_logger
 from bulwark_core.severity import Severity
 
 from manifest.bom.model import AIBOM, Component, ComponentType
+
+_log = get_logger(__name__)
 
 
 def _b5(component: Component, worst: Severity, source_tool: str, n: int) -> Finding:
@@ -47,6 +50,10 @@ def _airlock_on_models(bom: AIBOM, root: Path, offline: bool) -> list[Finding]:
         from airlock.rules import RuleEngine, load_rules
         from airlock.scanners.model import ModelScanner
     except ImportError:
+        _log.warning(
+            "airlock is not installed; skipping model risk "
+            "(pip install 'manifest[risk]')"
+        )
         return []
     scanner = ModelScanner(RuleEngine(load_rules()))
     findings: list[Finding] = []
@@ -78,6 +85,10 @@ def _warden_on_assemblies(bom: AIBOM, root: Path) -> list[Finding]:
         from warden.rules import load_rules as w_load_rules
         from warden.scanner import WardenScanner
     except ImportError:
+        _log.warning(
+            "warden is not installed; skipping assembly risk "
+            "(pip install 'manifest[risk]')"
+        )
         return []
     # An assembly is any MCP client config *or* any discovered agent config
     # (agent manifest / OpenAI Assistants / CrewAI). Both carry a location that an

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bulwark.cli import app
 from typer.testing import CliRunner
+
+from bulwark.cli import app
 
 runner = CliRunner()
 

@@ -13,6 +13,7 @@ from pathlib import Path
 from bulwark_core.report.terminal import render_terminal
 from bulwark_core.rules import RuleEngine
 from rich.console import Console
+
 from warden.rules import load_rules
 from warden.scanner import WardenScanner
 

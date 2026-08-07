@@ -47,12 +47,12 @@ jobs:
         run: ruff check .
 
       - name: Mypy
-        run: mypy ${{ matrix.package == 'bulwark-core' && 'bulwark_core' || matrix.package }}
+        run: mypy src/${{ matrix.package == 'bulwark-core' && 'bulwark_core' || matrix.package }}
 
       - name: Pytest (with coverage)
         run: |
           if [ -d tests ]; then
-            pkg="${{ matrix.package == 'bulwark-core' && 'bulwark_core' || matrix.package }}"
+            pkg="src/${{ matrix.package == 'bulwark-core' && 'bulwark_core' || matrix.package }}"
             pytest -q --cov="$pkg" --cov-report=term-missing --cov-report=xml
           else
             echo "no tests (exercised via tools)"

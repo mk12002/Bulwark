@@ -22,6 +22,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from bulwark_core.findings import Confidence, Finding, Location
+from bulwark_core.logging import get_logger
 from bulwark_core.severity import Severity
 from bulwark_core.signals import Signal, SignalBundle
 from bulwark_core.taxonomy import is_known
@@ -31,6 +32,8 @@ from bulwark_core.taxonomy import is_known
 # regex — including one from an untrusted community rule pack — from turning a
 # multi-megabyte field into catastrophic backtracking (ReDoS) against the scanner.
 MAX_MATCH_INPUT = 100_000
+
+_log = get_logger(__name__)
 
 
 @functools.lru_cache(maxsize=512)
@@ -233,6 +236,7 @@ def load_rule_dirs(roots: list[Path]) -> list[LoadedRule]:
                     )
                 seen_ids[lr.rule.id] = path
                 loaded.append(lr)
+    _log.info("loaded %d rule(s) from %d root(s)", len(loaded), len(roots))
     return loaded
 
 

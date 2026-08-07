@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "airlock"
-version = "0.1.0"
+version = "0.2.0"
 description = "Static security scanner for the AI agent supply chain — audit ML models and MCP servers before they touch your agent."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -61,12 +61,12 @@ Issues = "https://github.com/mk12002/Bulwark/issues"
 Changelog = "https://github.com/mk12002/Bulwark/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["airlock"]
+packages = ["src/airlock"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["airlock", "tests"]
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
@@ -113,5 +113,5 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["airlock"]
+source = ["src/airlock"]
 branch = true

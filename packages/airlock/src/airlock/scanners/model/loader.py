@@ -11,6 +11,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from bulwark_core.limits import walk_files
+from bulwark_core.logging import get_logger
+
+_log = get_logger(__name__)
 
 # File-extension groups used across the model analyzers.
 PICKLE_EXTENSIONS = {".bin", ".pt", ".pth", ".ckpt", ".pkl", ".pickle", ".joblib", ".dill"}
@@ -163,6 +166,7 @@ def _resolve_local(path_str: str) -> ModelInventory:
     # Bounded, symlink-contained walk — a hostile artifact directory must not be able
     # to make the scan traverse the whole filesystem (see bulwark_core.limits).
     files = [_artifact_file(p, root) for p in walk_files(root)]
+    _log.info("resolved local target %s: %d file(s)", path_str, len(files))
     return ModelInventory(target=path_str, root=root, files=files)
 
 

@@ -6,4 +6,4 @@ whole-system ``bulwark scan`` that runs the full inventory + risk pipeline.
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

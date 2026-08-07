@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from bulwark_core.rules import RuleEngine
 from bulwark_core.severity import Severity
+
 from warden.rules import load_rules
 from warden.scanner import WardenScanner
 from warden.spec.model import AgentSpec, Capability, Tool

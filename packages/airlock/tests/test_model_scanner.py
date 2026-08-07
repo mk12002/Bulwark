@@ -5,10 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from bulwark_core.severity import Severity
+
 from airlock.rules import RuleEngine, load_rules
 from airlock.scanners.model import ModelScanner
 from airlock.scanners.model.pickle_scan import analyze_stream
-from bulwark_core.severity import Severity
 
 
 @pytest.fixture(scope="module")

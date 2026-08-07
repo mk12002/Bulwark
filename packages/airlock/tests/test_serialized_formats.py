@@ -10,11 +10,12 @@ import zipfile
 import zlib
 from pathlib import Path
 
+from bulwark_core.limits import DEFAULT_LIMITS
+from bulwark_core.signals import SignalBundle
+
 from airlock.rules import RuleEngine, load_rules
 from airlock.scanners.model import ModelScanner, pickle_scan, serialized
 from airlock.scanners.model.loader import ArtifactFile
-from bulwark_core.limits import DEFAULT_LIMITS
-from bulwark_core.signals import SignalBundle
 
 
 def _artifact(path: Path) -> ArtifactFile:

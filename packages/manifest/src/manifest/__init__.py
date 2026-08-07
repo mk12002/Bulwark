@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Register Manifest's B* categories into the shared bulwark_core registry.
 from manifest import taxonomy as _taxonomy  # noqa: F401

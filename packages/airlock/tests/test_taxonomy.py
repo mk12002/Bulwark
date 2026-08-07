@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from bulwark_core.severity import Severity
+
 from airlock.taxonomy import (
     Category,
     all_categories,
     categories_for,
     category_info,
 )
-from bulwark_core.severity import Severity
 
 
 def test_all_categories_present() -> None:

@@ -122,10 +122,21 @@ def _collect_injectable_flows(
         return
     inj_names = ", ".join(t.name for t in injectors[:3])
 
+    # A gate on the sink breaks the *automated* chain: an injected instruction to
+    # exfiltrate now surfaces an approval prompt to a human before anything leaves.
+    # `injectable_action` already credits a declared gate; crediting it here too keeps
+    # the two escalations consistent, and means the recommender's advice ("require
+    # approval between reading data and any egress") measurably clears the finding.
+    ungated_sinks = [
+        (f"tool:{t.name}", ", ".join(sorted(c.value for c in t.capabilities & SINK_CAPS)))
+        for t in spec.tools
+        if (t.capabilities & SINK_CAPS) and t.gate == Gate.NONE
+    ]
+
     crown = [t for t in spec.tools if t.capabilities & SENSITIVE_SOURCE_CAPS]
-    if crown and sinks:
+    if crown and ungated_sinks:
         src = crown[0].name
-        sink = sinks[0][0]
+        sink = ungated_sinks[0][0]
         bundle.add(
             "agent.injectable_toxic_flow",
             f"{inj_names}=>{src}=>{sink}",

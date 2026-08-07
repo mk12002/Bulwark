@@ -6,9 +6,10 @@ import io
 import zipfile
 from pathlib import Path
 
+from bulwark_core.signals import SignalBundle
+
 from airlock.scanners.model import archive, provenance
 from airlock.scanners.model.loader import ArtifactFile, ModelInventory
-from bulwark_core.signals import SignalBundle
 
 
 def _artifact(path: Path) -> ArtifactFile:

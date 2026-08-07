@@ -8,7 +8,6 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from airlock.rules import RuleLoadError, load_rules
 from bulwark_core.ai.cache import CachingProvider
 from bulwark_core.ai.eval import DEFAULT_DATASET, evaluate
 from bulwark_core.findings import Finding, Location, ScanResult
@@ -16,6 +15,8 @@ from bulwark_core.report.sarif import render_sarif
 from bulwark_core.rule_feed import update_rules
 from bulwark_core.severity import Severity
 from bulwark_core.study import CorpusItem, render_markdown, run_study
+
+from airlock.rules import RuleLoadError, load_rules
 
 # --------------------------------------------------------------------------- #
 # Rule feed

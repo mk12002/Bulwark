@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 from bulwark_core.findings import Finding, Location
 from bulwark_core.severity import Severity
+
 from manifest.bom.diff import diff_boms
 from manifest.bom.model import AIBOM, Component, ComponentType, License, Provenance
 from manifest.govern import assess_eu_ai_act

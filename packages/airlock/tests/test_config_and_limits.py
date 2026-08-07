@@ -10,9 +10,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from bulwark_core.severity import Severity
+
 from airlock.config import load_settings
 from airlock.scanners.model.loader import resolve
-from bulwark_core.severity import Severity
 
 
 def _write(tmp_path: Path, body: str) -> Path:

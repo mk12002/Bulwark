@@ -10,6 +10,8 @@ from typing import Optional
 
 import typer
 from bulwark_core.findings import ScanResult
+from bulwark_core.logging import configure as configure_logging
+from bulwark_core.report.console import err_console
 from bulwark_core.severity import parse_severity
 from bulwark_core.signals import SignalBundle
 from rich.console import Console
@@ -37,7 +39,21 @@ rules_app = typer.Typer(help="Inspect and validate rule packs.", no_args_is_help
 app.add_typer(scan_app, name="scan")
 app.add_typer(rules_app, name="rules")
 
-_err = Console(stderr=True)
+_err = err_console()
+
+@app.callback()
+def _root(
+    verbose: int = typer.Option(
+        0,
+        "--verbose",
+        "-v",
+        count=True,
+        help="Diagnostics to stderr: -v for progress, -vv for detail. Never touches stdout.",
+    ),
+) -> None:
+    """Configure logging before any subcommand runs."""
+    configure_logging(verbose)
+
 
 
 def _load_engine() -> RuleEngine:

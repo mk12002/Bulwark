@@ -13,9 +13,10 @@ from pathlib import Path
 
 from bulwark_core.report.terminal import render_terminal
 from bulwark_core.rules import RuleEngine
+from rich.console import Console
+
 from manifest.rules import load_rules
 from manifest.scanner import ManifestScanner
-from rich.console import Console
 
 _ROOT = Path(__file__).resolve().parents[1]
 _PROJECT = _ROOT / "fixtures" / "sample_project_risky"
