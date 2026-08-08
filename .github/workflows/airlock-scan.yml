@@ -24,7 +24,7 @@ jobs:
   scan-model:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Scan model artifact
         id: scan
@@ -53,7 +53,7 @@ jobs:
 
       - name: Upload SARIF to code scanning
         if: always() && steps.verdict.outputs.produced_report == 'true'
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: airlock-model.sarif
           category: airlock-model
