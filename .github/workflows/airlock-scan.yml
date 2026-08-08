@@ -3,6 +3,12 @@ name: Airlock security scan
 # Demonstrates gating a build on Airlock findings and uploading SARIF to GitHub
 # code scanning. It scans the bundled fixtures so a fresh fork lights up findings
 # on the first run; point `target` at your own model/MCP server to adopt it.
+#
+# The step ordering matters. Naively letting `fail-on` fail the scan step means the
+# SARIF upload never runs, so you get a red build with nothing in the Security tab —
+# the worst outcome, because the user sees a failure and no explanation. So the scan
+# runs with `continue-on-error`, the upload runs regardless, and a later step decides
+# whether to fail. Findings are visible *before* the build goes red.
 
 on:
   push:
@@ -31,15 +37,40 @@ jobs:
           output: airlock-model.sarif
           fail-on: high
 
-      - name: Upload SARIF to code scanning
+      # `continue-on-error` makes a *tooling* failure look identical to a *findings*
+      # failure: both surface as outcome == 'failure'. That is a real trap — a broken
+      # install would be reported as "your model has critical findings". The report file
+      # is the discriminator: if the scan ran at all, it wrote one.
+      - name: Classify the scan outcome
+        id: verdict
         if: always()
+        run: |
+          if [ -s airlock-model.sarif ]; then
+            echo "produced_report=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "produced_report=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload SARIF to code scanning
+        if: always() && steps.verdict.outputs.produced_report == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: airlock-model.sarif
           category: airlock-model
 
-      - name: Gate the build on findings
-        if: steps.scan.outcome == 'failure'
+      # A scan that never produced a report did not "find issues" — it failed to run.
+      # Reporting that as a security finding would train people to distrust the gate.
+      - name: Fail on tooling error
+        if: always() && steps.verdict.outputs.produced_report != 'true'
         run: |
-          echo "Airlock found issues at or above the fail-on threshold."
+          echo "::error title=Airlock did not run::The scan produced no SARIF report."
+          echo "This is a tooling or installation failure, not a security finding."
+          echo "Check the 'Scan model artifact' step above for the underlying error."
+          exit 1
+
+      - name: Gate the build on findings
+        if: steps.scan.outcome == 'failure' && steps.verdict.outputs.produced_report == 'true'
+        run: |
+          echo "::error title=Airlock findings::Issues at or above the fail-on threshold."
+          echo "See the Security tab (category: airlock-model) for details."
           exit 1

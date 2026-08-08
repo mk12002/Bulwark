@@ -51,12 +51,24 @@ runs:
       run: |
         set -euo pipefail
         if [ -n "${{ inputs.version }}" ]; then
+          # Pinned release from PyPI; bulwark-core resolves as a normal dependency.
           pip install "airlock${{ inputs.version }}[model,mcp]"
         elif [ -f "${{ github.action_path }}/pyproject.toml" ]; then
+          # Running from a source checkout (this repo, or `owner/repo/packages/airlock@ref`).
+          # Airlock depends on bulwark-core, which is a *sibling workspace package* — it is
+          # not on PyPI until a release is published, so pip cannot resolve it and the
+          # install fails with "No matching distribution found for bulwark-core". Install
+          # the sibling from source first when it is present.
+          CORE="${{ github.action_path }}/../bulwark-core"
+          if [ -f "$CORE/pyproject.toml" ]; then
+            echo "installing bulwark-core from source: $CORE"
+            pip install "$CORE"
+          fi
           pip install "${{ github.action_path }}[model,mcp]"
         else
           pip install "airlock[model,mcp]"
         fi
+        airlock version
 
     - name: Run Airlock scan
       shell: bash

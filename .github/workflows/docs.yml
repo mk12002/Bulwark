@@ -33,7 +33,10 @@ jobs:
           cache: pip
 
       - name: Install
-        run: pip install "mkdocs-material==9.6.24"
+        # Pinned so a theme release cannot break the docs build with no commit on our
+        # side — the same reproducibility argument Manifest's B1 makes about unpinned
+        # dependencies. Bump deliberately, via Dependabot.
+        run: pip install "mkdocs-material==9.7.7"
 
       - name: Build (strict)
         run: mkdocs build --strict
