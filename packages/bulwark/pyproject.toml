@@ -24,8 +24,8 @@ dependencies = [
     "airlock",
     "warden",
     "manifest",
-    "typer>=0.12",
-    "rich>=13.7",
+    "typer>=0.27.1",
+    "rich>=15.0.0",
 ]
 
 [project.optional-dependencies]

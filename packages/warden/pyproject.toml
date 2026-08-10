@@ -21,11 +21,11 @@ classifiers = [
 ]
 dependencies = [
     "bulwark-core",
-    "typer>=0.12",
-    "rich>=13.7",
-    "pydantic>=2.6",
-    "pydantic-settings>=2.2",
-    "pyyaml>=6.0",
+    "typer>=0.27.1",
+    "rich>=15.0.0",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "pyyaml>=6.0.3",
 ]
 
 [project.optional-dependencies]
