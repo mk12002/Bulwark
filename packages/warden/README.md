@@ -104,6 +104,27 @@ findings; the **agency score** headlines the report. `--recommend` produces a mi
 diff. Everything reuses `bulwark-core` for findings, the rule engine, reports
 (terminal/JSON/HTML/SARIF), threshold exit codes, and the optional AI layer.
 
+## Validation
+
+Warden's claims are measured, including where they stop
+(`python packages/warden/scripts/study.py`):
+
+| Study | Result |
+| --- | --- |
+| Cross-framework invariance | **4/4** encodings of the same agent → identical capabilities and A-codes |
+| Lexicon robustness | A2 recovered on **4/7** obfuscation variants |
+| False positives on benign agents | **0/7** spurious A2, **3/7** carry a HIGH+ single-tool finding |
+| `--recommend` efficacy | mean agency score **52.5 → 31.2**, HIGH+ findings **17 → 8** |
+
+The 4/7 is deliberately published. Warden is reliable when tool names or descriptions are
+conventional and **degrades to silence** when they are not — paraphrased descriptions are the
+ceiling of keyword matching, and no amount of pattern-tuning closes that class.
+
+The study earns its keep: it found three real lexicon defects, all now fixed and regression-tested.
+The worst was that `camelCase` tool names were entirely unclassifiable, so **every TypeScript
+assembly silently lost A2** while still reporting a clean-looking MEDIUM verdict. Full methodology
+and honesty notes: [`docs/VALIDATION.md`](docs/VALIDATION.md).
+
 ## Safety
 
 Warden is defensive: it inspects configs **statically** (never executes or imports target agent code —

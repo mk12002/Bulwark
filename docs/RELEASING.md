@@ -50,7 +50,8 @@ twine check /tmp/dist/*
 
 ## After release
 
-- Confirm `pip install bulwark` pulls in `airlock`, `warden`, `manifest`, and `bulwark-core`.
+- Confirm `pip install bulwark-suite` pulls in `bulwark-airlock`, `bulwark-warden`,
+  `bulwark-manifest`, and `bulwark-core`.
 - Update the GitHub release notes from the `CHANGELOG.md` section.
 - Update the README badges / demo if anything user-facing changed.
 

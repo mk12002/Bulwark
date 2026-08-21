@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./.venv/Scripts/python.exe -m pytest packages/warden/tests -p no:cacheprovider --color=no -q)",
+      "Bash(./.venv/Scripts/python.exe packages/warden/scripts/study.py)",
+      "Bash(./.venv/Scripts/python.exe packages/manifest/scripts/study.py)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(./.venv/Scripts/python.exe -c ' *)",
+      "Bash(./.venv/Scripts/python.exe -)",
+      "Bash(./.venv/Scripts/python.exe -m ruff check packages/bulwark)",
+      "Bash(mkdir -p space)"
+    ]
+  }
+}

@@ -92,6 +92,22 @@ that **YAML rule packs** turn into findings → with `--scan-risk`, the **bridge
 model/MCP components and Warden on assemblies and attach their findings as B5 → with `--govern`, the
 control mapping + risk register are produced. Everything reuses `bulwark-core`.
 
+## Validation
+
+Manifest's four claims — complete, conformant, governable, composable — are measured rather than
+asserted (`python packages/manifest/scripts/study.py`):
+
+| Study | Result |
+| --- | --- |
+| Discovery recall vs. hand-written ground truth | **15/15 components (100%)** — incl. models and datasets recovered from notebook cells |
+| CycloneDX + SPDX conformance | **10/10** required-field and well-formedness checks |
+| Governance coverage | NIST AI RMF **3/4** functions exercised · EU AI Act **5/6** articles |
+| Risk-bridge fidelity (`--scan-risk`) | **6/6** — purely additive, no findings dropped or double-counted |
+
+The load-bearing caveat: **n = 2 fixture projects, both authored here.** That makes this a regression
+guarantee, not an estimate of recall on real repositories. Full methodology, per-component ground
+truth, and honesty notes: [`docs/VALIDATION.md`](docs/VALIDATION.md).
+
 ## Safety
 
 Discoverers **parse statically and never execute** the target project. Fixtures are benign sample

@@ -16,7 +16,7 @@ from the individual components up to the governable whole.*
 [![Docs](https://github.com/mk12002/Bulwark/actions/workflows/docs.yml/badge.svg)](https://mk12002.github.io/Bulwark/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-![Tests](https://img.shields.io/badge/tests-290%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-320%20passing-brightgreen.svg)
 ![Style](https://img.shields.io/badge/lint-ruff%20%2B%20mypy%20strict-informational.svg)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -96,10 +96,10 @@ Python. That split is why a new detection can ship as a YAML-only pull request.
 ## Install
 
 ```bash
-pip install airlock            # scan the parts
-pip install warden             # scan the assembly
-pip install "manifest[risk]"   # inventory the system, with risk folded in
-pip install bulwark            # all three behind one front door
+pip install bulwark-airlock            # scan the parts
+pip install bulwark-warden             # scan the assembly
+pip install "bulwark-manifest[risk]"   # inventory the system, with risk folded in
+pip install bulwark-suite              # all three behind one front door
 ```
 
 Each tool is independently installable — someone who wants a model scanner shouldn't
@@ -263,12 +263,20 @@ runnable scripts in **[`examples/`](examples/)** (exercised by CI, so they can't
 
 - **Standards-based** — CycloneDX ML-BOM + SPDX, SARIF for code scanning, OWASP LLM Top 10 / MITRE
   ATLAS / CWE / NIST AI RMF / EU AI Act references throughout.
-- **Measured, not asserted** — validated on **19 real public HuggingFace models** (100% had a
-  supply-chain finding; 95% ship pickle weights), a **14-payload adversarial suite** Airlock catches
-  **14/14**, and a four-way **benchmark vs. picklescan / modelscan / fickling** (Airlock is the only one
-  at 14/14 on evasive payloads; all four post 0/18 false alarms on benign models). Detectors target the
-  2025 bypass wave directly — format/extension confusion (CVE-2025-10155 class) and a Fickling-style
-  import allowlist. Full methodology: [`docs/EMPIRICAL_VALIDATION.md`](docs/EMPIRICAL_VALIDATION.md).
+- **Measured, not asserted — at all three layers.**
+  *Parts:* validated on **19 real public HuggingFace models** (100% had a supply-chain finding; 95%
+  ship pickle weights), a **14-payload adversarial suite** Airlock catches **14/14**, and a four-way
+  **benchmark vs. picklescan / modelscan / fickling** (Airlock is the only one at 14/14 on evasive
+  payloads; all four post 0/18 false alarms on benign models).
+  *Assembly:* the same agent in **4 framework encodings** yields identical capabilities and A-codes,
+  **0/7** spurious A2 on benign agents, and `--recommend` moves the mean agency score **52.5 → 31.2**.
+  Warden's lexicon recovers the toxic combination on **4/7** obfuscation variants — published as-is,
+  because a tool that is honest about where it stops is more useful than one implying uniform coverage.
+  *System:* **15/15** discovery recall against hand-written ground truth, **10/10** CycloneDX + SPDX
+  conformance checks, and **6/6** risk-bridge checks showing composition is purely additive.
+  Detectors target the 2025 bypass wave directly — format/extension confusion (CVE-2025-10155 class)
+  and a Fickling-style import allowlist.
+  Full methodology and honesty notes: [`docs/EMPIRICAL_VALIDATION.md`](docs/EMPIRICAL_VALIDATION.md).
 - **Reproducible research angle** — each tool ships a corpus/study harness for an empirical measurement
   of AI-supply-chain hygiene ("we scanned N public artifacts and X% were vulnerable").
 - **Hardened against its own inputs** — a scanner that ingests hostile files must not become the
@@ -278,7 +286,7 @@ runnable scripts in **[`examples/`](examples/)** (exercised by CI, so they can't
   feed, bounds regex input to blunt ReDoS, and HTML-escapes all report output (no scanner-report
   XSS). Two invariants are enforced by tests rather than discipline: core imports nothing from the
   tools, and core never calls an execution primitive. See [`SECURITY.md`](SECURITY.md).
-- **Green everywhere** — 5 packages, 270+ tests, ruff + mypy + pytest all passing via one command
+- **Green everywhere** — 5 packages, 320 tests, ruff + mypy + pytest all passing via one command
   (`python check.py`), matrixed in CI. Releases are ordered (core first), **Sigstore-signed**, and
   ship Bulwark's own AI-BOM as an artifact — the project applies its own advice to itself.
 

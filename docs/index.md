@@ -56,10 +56,10 @@ flowchart LR
 ## Install
 
 ```bash
-pip install airlock          # scan the parts
-pip install warden           # scan the assembly
-pip install "manifest[risk]" # inventory the system, with risk folded in
-pip install bulwark          # all three behind one front door
+pip install bulwark-airlock          # scan the parts
+pip install bulwark-warden           # scan the assembly
+pip install "bulwark-manifest[risk]" # inventory the system, with risk folded in
+pip install bulwark-suite            # all three behind one front door
 ```
 
 ## Sixty seconds

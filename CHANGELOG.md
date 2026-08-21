@@ -6,6 +6,60 @@ All notable changes to Bulwark are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- **PyPI distributions moved into the `bulwark-` namespace.** Every unnamespaced name the
+  suite wanted is already taken on PyPI by an unrelated project — `airlock` is a 2015
+  Google App Engine OAuth wrapper, `warden` a 2012 monitoring shim, `manifest` an LLM
+  code-execution tool, and `bulwark` a pandas testing library. The documented install
+  commands therefore installed *someone else's package*.
+
+  | Was (someone else's) | Now |
+  | --- | --- |
+  | `pip install airlock` | `pip install bulwark-airlock` |
+  | `pip install warden` | `pip install bulwark-warden` |
+  | `pip install manifest` | `pip install bulwark-manifest` |
+  | `pip install bulwark` | `pip install bulwark-suite` |
+
+  **Nothing about usage changes.** CLI commands are still `airlock`, `warden`, `manifest`,
+  and `bulwark`; import names are still `import airlock`, `from warden.scanner import …`.
+  Only the distribution name moves. A packaging invariant test now enforces the namespace,
+  so the suite cannot be republished under a squatted name by accident.
+- **`CITATION.cff`** added, so GitHub renders a "Cite this repository" button and a Zenodo
+  release archive carries real authorship instead of a repository slug.
+
+### Added
+- **Validation harnesses for Warden and Manifest** (`packages/<tool>/scripts/study.py`),
+  closing a gap where every published Bulwark measurement came from Airlock. Warden gets
+  four studies — cross-framework invariance, lexicon robustness under obfuscation, false
+  positives on benign assemblies, and `--recommend` efficacy. Manifest gets four —
+  discovery recall against hand-written ground truth, CycloneDX/SPDX conformance,
+  governance control coverage, and risk-bridge fidelity. Both are deterministic and
+  offline; results are written to `docs/VALIDATION.md` per tool and folded into
+  `docs/EMPIRICAL_VALIDATION.md`, which is now organized by layer (part / assembly /
+  system) rather than by tool.
+- **15 tests pinning every published validation figure**, so a rule or lexicon change
+  that moves a number fails CI instead of quietly making the docs wrong.
+
+### Fixed
+- **`camelCase` tool names were entirely unclassifiable**, so any assembly using them —
+  most of the TypeScript MCP ecosystem — silently lost **A2**, Warden's flagship
+  attacker-triggerable exfiltration finding, while still reporting a clean-looking MEDIUM
+  verdict. `_tool_text()` appended an underscore/hyphen-normalized copy so `\bbrowse\b`
+  matched `browse_web`, but never split case transitions, so `browseWeb` matched nothing.
+  It now appends a camel-split copy as well; `snake_case` and `camelCase` classify
+  identically. Found by the new lexicon-robustness study.
+- **`transfer` / `wire` no longer imply `FINANCIAL` without a money noun.** "Transfer the
+  meaning of a phrase into another language" was classified as a financial operation, and
+  because `FINANCIAL` is high-impact it also raised a spurious A3 missing-gate finding on
+  a plain translation tool. ("Transfer learning" tripped it too.)
+- **`request` no longer implies `NET_OUT` without network context.** A bare `\brequest\b`
+  matched "the user's request" — ordinary English long before it is an HTTP verb, and the
+  single noisiest source of spurious egress capability on benign agents.
+
+Together the two false-positive fixes halve the benign agents carrying a HIGH+ finding
+(5/7 → 3/7) with no loss of true positives, and the camelCase fix raises A2 recovery under
+obfuscation from 3/7 to 4/7.
+
 ## [0.2.0] — 2026-08-07
 
 Productionisation release: the suite becomes installable software rather than a

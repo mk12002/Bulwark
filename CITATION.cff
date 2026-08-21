@@ -1,0 +1,69 @@
+# Citation metadata for Bulwark.
+#
+# GitHub renders this as a "Cite this repository" button, and Zenodo reads it when
+# archiving a release — so the DOI it mints carries these authors and this title
+# rather than a bare repository slug.
+#
+# On release: bump `version` and `date-released` to match the git tag, then add the
+# minted DOI under `identifiers` (and, once a paper exists, uncomment
+# `preferred-citation` so tooling cites the paper while still resolving the software).
+cff-version: 1.2.0
+title: "Bulwark: a security stack for agentic AI"
+message: "If you use this software or its findings in your research, please cite it."
+type: software
+
+authors:
+  - given-names: Mohit
+    family-names: Kumar
+    email: mkd1112002@gmail.com
+
+repository-code: "https://github.com/mk12002/Bulwark"
+url: "https://mk12002.github.io/Bulwark/"
+license: Apache-2.0
+version: 0.2.0
+date-released: 2026-08-07
+
+abstract: >-
+  Bulwark is a defensive security suite for the AI agent supply chain, composed of three
+  scanners that audit a system at three levels. Airlock statically analyses the parts —
+  ML model artifacts, MCP servers, and tool specifications — for malicious serialization,
+  tool poisoning, and provenance gaps. Warden audits the assembly, treating an agent's
+  tools, scopes, prompt, and autonomy as a capability graph in order to detect excessive
+  agency and toxic tool combinations that no individual component exhibits. Manifest
+  inventories the whole system as a standards-based CycloneDX or SPDX AI-BOM with NIST AI
+  RMF and EU AI Act control mapping, folding the other two tools' findings in inline.
+  The suite is deterministic-first, never executes or imports the artifacts it inspects,
+  and expresses its detection logic as YAML rule packs rather than code. It is validated
+  at all three levels: a corpus study over public models, an adversarial evasion suite,
+  a four-way benchmark against existing pickle scanners, cross-framework invariance and
+  false-positive studies for the assembly layer, and discovery-recall and
+  standards-conformance studies for the system layer.
+
+keywords:
+  - ai-security
+  - supply-chain-security
+  - static-analysis
+  - machine-learning
+  - agentic-ai
+  - model-context-protocol
+  - sbom
+  - ai-bom
+  - cyclonedx
+  - excessive-agency
+  - least-privilege
+  - ai-governance
+
+# Uncomment and complete once the Zenodo DOI is minted:
+# identifiers:
+#   - type: doi
+#     value: 10.5281/zenodo.XXXXXXX
+#     description: "Concept DOI — always resolves to the latest release"
+
+# Uncomment once a paper exists, so citations point at the paper:
+# preferred-citation:
+#   type: article
+#   title: "..."
+#   authors:
+#     - given-names: Mohit
+#       family-names: Kumar
+#   year: 2026

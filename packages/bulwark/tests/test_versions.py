@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+# directory -> importable module name
 PACKAGES = {
     "bulwark-core": "bulwark_core",
     "airlock": "airlock",
@@ -22,6 +23,23 @@ PACKAGES = {
     "manifest": "manifest",
     "bulwark": "bulwark",
 }
+# directory -> PyPI distribution name. Every unnamespaced name we would have wanted
+# (`airlock`, `warden`, `manifest`, `bulwark`) is already taken on PyPI by an unrelated
+# project, so distributions live in the `bulwark-` namespace while the CLI commands and
+# import names stay short. Publishing under a squatted name would ship our wheel to
+# someone else's users, so the namespace is enforced rather than remembered.
+DISTRIBUTIONS = {
+    "bulwark-core": "bulwark-core",
+    "airlock": "bulwark-airlock",
+    "warden": "bulwark-warden",
+    "manifest": "bulwark-manifest",
+    "bulwark": "bulwark-suite",
+}
+
+
+def _declared_name(pkg: str) -> str:
+    data = tomllib.loads((REPO_ROOT / "packages" / pkg / "pyproject.toml").read_text("utf-8"))
+    return str(data["project"]["name"])
 
 
 def _declared_version(pkg: str) -> str:
@@ -58,6 +76,35 @@ def test_src_layout_is_used_everywhere() -> None:
         assert (REPO_ROOT / "packages" / pkg / "src" / module).is_dir(), f"{pkg} is not src-layout"
         assert not (REPO_ROOT / "packages" / pkg / module).exists(), (
             f"{pkg}: a flat {module}/ still exists alongside src/ — imports are ambiguous"
+        )
+
+
+def test_distributions_stay_in_the_bulwark_namespace() -> None:
+    """Never publish under a name that belongs to another project on PyPI.
+
+    `airlock`, `warden`, `manifest`, and `bulwark` are all taken by unrelated packages.
+    A rename back to any of them would either fail to publish or, worse, be typo-adjacent
+    to a package our users did not ask for.
+    """
+    for pkg, expected in DISTRIBUTIONS.items():
+        actual = _declared_name(pkg)
+        assert actual == expected, (
+            f"{pkg}: distribution name is {actual!r}, expected {expected!r} — "
+            "the unnamespaced names are taken on PyPI by unrelated projects"
+        )
+        assert actual.startswith("bulwark"), f"{pkg}: {actual!r} leaves the bulwark namespace"
+
+
+def test_cli_commands_stay_short_despite_namespaced_distributions() -> None:
+    """The namespace is a packaging detail; `airlock scan ...` must not become
+    `bulwark-airlock scan ...`."""
+    for pkg, module in PACKAGES.items():
+        if pkg == "bulwark-core":  # the shared spine ships no CLI
+            continue
+        data = tomllib.loads((REPO_ROOT / "packages" / pkg / "pyproject.toml").read_text("utf-8"))
+        scripts = data["project"].get("scripts", {})
+        assert module in scripts, (
+            f"{pkg}: expected a `{module}` console script, got {list(scripts)}"
         )
 
 

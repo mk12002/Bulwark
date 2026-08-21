@@ -57,7 +57,12 @@ _LEXICON: dict[Capability, list[str]] = {
         r"\bhttp\b",
         r"\burl\b",
         r"\bfetch\b",
-        r"\brequest\b",
+        # A bare \brequest\b matched "the user's request", "clarify their request" —
+        # the single noisiest source of spurious NET_OUT on benign agents, because
+        # "request" is ordinary English before it is an HTTP verb. Require it to sit
+        # next to something actually network-shaped.
+        r"\brequests?\b[^.]{0,30}\b(http|https|url|api|web|server|endpoint|host)\b",
+        r"\b(http|https|url|api|web|server|endpoint|host)\b[^.]{0,30}\brequests?\b",
         r"\bdownload\b",
         r"\bupload\b",
         r"\bpost\b",
@@ -109,9 +114,15 @@ _LEXICON: dict[Capability, list[str]] = {
         r"\bpayment\b",
         r"\bcharge\b",
         r"\bstripe\b",
-        r"\btransfer\b",
+        # "transfer" and "wire" are only financial next to a money noun. Bare, they
+        # matched "transfer the meaning", "transfer learning", and "wire up a tool" —
+        # and FINANCIAL is HIGH_IMPACT, so each miss cost a spurious A3 missing-gate
+        # finding on a text tool. Same fix as \bformat\b and \bopen\b above.
+        r"\b(transfer|wire)(s|red|ring)?\b[^.]{0,40}"
+        r"\b(fund|funds|money|payment|amount|balance|account|cash|invoice|usd|eur)\b",
+        r"\b(fund|funds|money|payment|amount|balance|account|cash|invoice|usd|eur)\b"
+        r"[^.]{0,40}\b(transfer|wire)(s|red|ring)?\b",
         r"\bpurchase\b",
-        r"\bwire\b",
         r"\brefund\b",
     ],
     Capability.DESTRUCTIVE: [
@@ -141,9 +152,13 @@ _WILDCARD_SCOPE = re.compile(
 
 _SENSITIVE_KINDS = {"secret", "secrets", "env", "credential", "credentials", "vault"}
 
+# Split camelCase/PascalCase at a lower→upper transition: browseWeb -> "browse Web".
+# Also handles acronym runs (HTTPRequest -> "HTTP Request").
+_CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+
 
 def _tool_text(tool: Tool) -> str:
-    """The searchable text for a tool: its raw fields *plus* a de-snaked copy.
+    """The searchable text for a tool: its raw fields plus case-normalized copies.
 
     Tool names are overwhelmingly ``snake_case``, and ``_`` is a regex word character —
     so ``\\bbrowse\\b`` does **not** match ``browse_web``, and ``\\bshell\\b`` does not
@@ -152,16 +167,29 @@ def _tool_text(tool: Tool) -> str:
     Warden's flagship CRITICAL finding (an attacker-triggerable exfiltration flow) did
     not fire on an agent wiring a tool called ``browse_web``.
 
-    Appending an underscore/hyphen-normalized copy makes word-boundary patterns work on
-    snake_case without weakening them, and without touching the literal patterns
-    (``exec_cmd``, ``run_shell``) that match the raw form.
+    ``camelCase`` had exactly the same defect for exactly the same reason, and it went
+    unnoticed for longer because the fixtures were all snake_case: ``browseWeb`` has no
+    word boundary before ``Web``, so a TypeScript/JavaScript assembly — most of the MCP
+    ecosystem — classified every tool as ``UNKNOWN`` and lost A2 entirely. The
+    robustness study in ``scripts/study.py`` is what surfaced it.
+
+    Appending underscore/hyphen- and camel-normalized copies makes word-boundary
+    patterns work on both conventions without weakening them, and without touching the
+    literal patterns (``exec_cmd``, ``run_shell``) that match the raw form.
     """
     parts = [tool.name, tool.description or "", " ".join(tool.scopes)]
     if tool.source:
         parts.append(tool.source)
     raw = "\n".join(parts)
+
+    variants = [raw]
     desnaked = raw.replace("_", " ").replace("-", " ")
-    return raw if desnaked == raw else f"{raw}\n{desnaked}"
+    if desnaked != raw:
+        variants.append(desnaked)
+    decameled = _CAMEL_BOUNDARY.sub(" ", raw)
+    if decameled != raw:
+        variants.append(decameled)
+    return "\n".join(variants)
 
 
 def classify_tool(tool: Tool) -> set[Capability]:

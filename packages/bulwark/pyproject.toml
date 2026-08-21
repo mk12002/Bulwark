@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bulwark"
+name = "bulwark-suite"
 version = "0.2.0"
 description = "The security stack for agentic AI — one CLI over Airlock, Warden, and Manifest."
 readme = "README.md"
@@ -21,9 +21,9 @@ classifiers = [
 ]
 dependencies = [
     "bulwark-core",
-    "airlock",
-    "warden",
-    "manifest",
+    "bulwark-airlock",
+    "bulwark-warden",
+    "bulwark-manifest",
     "typer>=0.12",
     "rich>=13.7",
 ]

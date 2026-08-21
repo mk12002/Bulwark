@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "airlock"
+name = "bulwark-airlock"
 version = "0.2.0"
 description = "Static security scanner for the AI agent supply chain — audit ML models and MCP servers before they touch your agent."
 readme = "README.md"

@@ -32,7 +32,8 @@ They compose: **Manifest** builds an inventory and calls **Airlock** on each mod
 - Manifest **calls Airlock and Warden as libraries** (`--scan-risk`), and Warden calls Airlock
   (`--scan-parts`). Trivial in a monorepo, painful across repos. Note the *packaging* dependency is
   deliberately soft: the siblings are declared as optional extras (`manifest[risk]`,
-  `warden[bridge]`) and each bridge catches `ImportError` and degrades, so `pip install manifest`
+  `bulwark-warden[bridge]`) and each bridge catches `ImportError` and degrades, so
+  `pip install bulwark-manifest`
   still yields a working AI-BOM generator with a small footprint.
 - One coherent product story beats three scattered demos for portfolio signal.
 - Each package still ships its own CLI and is independently installable, so nothing is lost.

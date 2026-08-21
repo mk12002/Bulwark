@@ -1,14 +1,23 @@
 name: Airlock security scan
 
-# Demonstrates gating a build on Airlock findings and uploading SARIF to GitHub
-# code scanning. It scans the bundled fixtures so a fresh fork lights up findings
-# on the first run; point `target` at your own model/MCP server to adopt it.
+# Bulwark scanning itself — and the reference pattern for adopting it.
 #
-# The step ordering matters. Naively letting `fail-on` fail the scan step means the
-# SARIF upload never runs, so you get a red build with nothing in the Security tab —
-# the worst outcome, because the user sees a failure and no explanation. So the scan
-# runs with `continue-on-error`, the upload runs regardless, and a later step decides
-# whether to fail. Findings are visible *before* the build goes red.
+# Two jobs, because a demo and a gate want opposite targets:
+#
+#   demo-findings  scans the *deliberately poisoned* fixture. It must NOT gate: those
+#                  findings are the expected output of a test artifact, and a check that
+#                  is permanently red is one everyone learns to ignore. It uploads SARIF
+#                  (so the Security-tab integration is exercised on every push) and
+#                  asserts findings *are* produced — a detector that silently stops
+#                  detecting is the regression that actually matters.
+#
+#   gate-clean     scans the clean fixture with --fail-on high and must pass. This is
+#                  the real regression check, and the pattern to copy: point `target` at
+#                  your own model and a genuine finding will fail your build.
+#
+# The step ordering inside each job matters. Naively letting `fail-on` fail the scan step
+# means the SARIF upload never runs, so you get a red build with nothing in the Security
+# tab — the worst outcome, because the user sees a failure and no explanation.
 
 on:
   push:
@@ -18,18 +27,24 @@ on:
 
 permissions:
   contents: read
-  security-events: write # required to upload SARIF to code scanning
 
 jobs:
-  scan-model:
+  # --------------------------------------------------------------------------- #
+  # Demonstration: findings reach GitHub code scanning. Does not gate.
+  # --------------------------------------------------------------------------- #
+  demo-findings:
+    name: Report findings to code scanning
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # required to upload SARIF
     steps:
       - uses: actions/checkout@v4
 
-      - name: Scan model artifact
+      - name: Scan the poisoned fixture
         id: scan
-        uses: ./packages/airlock # this repo's action; use `mk12002/Bulwark@v1` from elsewhere
-        continue-on-error: true # let SARIF upload run even when findings gate the build
+        uses: ./packages/airlock # this repo's action; use `mk12002/Bulwark/packages/airlock@v1` elsewhere
+        continue-on-error: true # findings are expected here — the assertion below is the real check
         with:
           scan-type: model
           target: packages/airlock/fixtures/model/poisoned
@@ -38,39 +53,60 @@ jobs:
           fail-on: high
 
       # `continue-on-error` makes a *tooling* failure look identical to a *findings*
-      # failure: both surface as outcome == 'failure'. That is a real trap — a broken
-      # install would be reported as "your model has critical findings". The report file
-      # is the discriminator: if the scan ran at all, it wrote one.
-      - name: Classify the scan outcome
-        id: verdict
-        if: always()
+      # failure: both surface as outcome == 'failure'. The report file is the
+      # discriminator — if the scan ran at all, it wrote one.
+      - name: Verify the scan actually ran
         run: |
-          if [ -s airlock-model.sarif ]; then
-            echo "produced_report=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "produced_report=false" >> "$GITHUB_OUTPUT"
+          if [ ! -s airlock-model.sarif ]; then
+            echo "::error title=Airlock did not run::The scan produced no SARIF report."
+            echo "This is a tooling or installation failure, not a security finding."
+            echo "Check the 'Scan the poisoned fixture' step above for the underlying error."
+            exit 1
           fi
+          echo "SARIF report written ($(wc -c < airlock-model.sarif) bytes)"
+
+      # The regression that matters for a detection tool: not "did it find something bad"
+      # but "does it still find the bad thing we know is there".
+      - name: Assert the known-bad fixture is still detected
+        run: |
+          python - <<'PY'
+          import json, sys
+          run = json.load(open("airlock-model.sarif"))["runs"][0]
+          rules = {r["id"] for r in run["tool"]["driver"]["rules"]}
+          results = run["results"]
+          print(f"{len(results)} result(s) across rules: {sorted(rules)}")
+          if "M1" not in rules:
+              sys.exit("::error::M1 (pickle code execution) was NOT detected on the "
+                       "poisoned fixture — the detector has regressed.")
+          if not any(r["level"] == "error" for r in results):
+              sys.exit("::error::No error-level results on a fixture that contains a "
+                       "CRITICAL payload — severity mapping has regressed.")
+          print("detector intact: M1 present at error level")
+          PY
 
       - name: Upload SARIF to code scanning
-        if: always() && steps.verdict.outputs.produced_report == 'true'
+        if: always() && hashFiles('airlock-model.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: airlock-model.sarif
           category: airlock-model
 
-      # A scan that never produced a report did not "find issues" — it failed to run.
-      # Reporting that as a security finding would train people to distrust the gate.
-      - name: Fail on tooling error
-        if: always() && steps.verdict.outputs.produced_report != 'true'
-        run: |
-          echo "::error title=Airlock did not run::The scan produced no SARIF report."
-          echo "This is a tooling or installation failure, not a security finding."
-          echo "Check the 'Scan model artifact' step above for the underlying error."
-          exit 1
+  # --------------------------------------------------------------------------- #
+  # The gate. This is the pattern to copy for your own repository.
+  # --------------------------------------------------------------------------- #
+  gate-clean:
+    name: Gate the build on findings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Gate the build on findings
-        if: steps.scan.outcome == 'failure' && steps.verdict.outputs.produced_report == 'true'
-        run: |
-          echo "::error title=Airlock findings::Issues at or above the fail-on threshold."
-          echo "See the Security tab (category: airlock-model) for details."
-          exit 1
+      # Point `target` at your own model or MCP server. A finding at or above `fail-on`
+      # exits non-zero and fails the job — no extra wiring needed.
+      - name: Scan (must be clean)
+        uses: ./packages/airlock
+        with:
+          scan-type: model
+          target: packages/airlock/fixtures/model/clean
+          format: sarif
+          output: airlock-clean.sarif
+          fail-on: high

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "warden"
+name = "bulwark-warden"
 version = "0.2.0"
 description = "Least-privilege auditor for AI agents — scan the assembly (part of the Bulwark suite)."
 readme = "README.md"
@@ -37,7 +37,7 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "types-PyYAML>=6.0",
-    "airlock",
+    "bulwark-airlock",
 ]
 
 [project.scripts]

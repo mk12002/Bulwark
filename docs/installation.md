@@ -10,15 +10,15 @@ inherit an SBOM generator.
 === "One tool"
 
     ```bash
-    pip install airlock      # models, MCP servers, tool-specs
-    pip install warden       # agent assemblies
-    pip install manifest     # AI-BOM + governance
+    pip install bulwark-airlock      # models, MCP servers, tool-specs
+    pip install bulwark-warden       # agent assemblies
+    pip install bulwark-manifest     # AI-BOM + governance
     ```
 
 === "Everything"
 
     ```bash
-    pip install bulwark      # mounts all three behind one CLI
+    pip install bulwark-suite        # mounts all three behind one CLI
     ```
 
 === "From source"
@@ -44,15 +44,15 @@ them never pays for them.
 | `manifest[osv]` | `httpx` | live OSV vulnerability lookups |
 
 ```bash
-pip install "airlock[model,mcp]"
-pip install "manifest[risk,osv]"
+pip install "bulwark-airlock[model,mcp]"
+pip install "bulwark-manifest[risk,osv]"
 ```
 
 Without an extra, the feature degrades with a clear message rather than a traceback:
 
 ```console
 $ manifest scan ./project --scan-risk
-WARNING  airlock is not installed; skipping model risk (pip install 'manifest[risk]')
+WARNING  airlock is not installed; skipping model risk (pip install 'bulwark-manifest[risk]')
 ```
 
 ## Verify

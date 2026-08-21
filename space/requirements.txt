@@ -1,0 +1,14 @@
+# Hugging Face Space dependencies.
+#
+# Installed straight from the GitHub repo so the Space always demos the same code the
+# repository ships — no separate copy of the scanners to drift out of sync. Pin to a tag
+# instead of `main` once v0.3.0 is released.
+#
+# `[model]` pulls Airlock's model-format parsers. Warden and bulwark-core come along as
+# dependencies. Manifest is deliberately not installed: the Space demos the part and
+# assembly layers, and an SBOM generator is not a good interactive demo.
+gradio>=5.0,<6.0
+PyYAML>=6.0
+
+bulwark-airlock[model] @ git+https://github.com/mk12002/Bulwark.git#subdirectory=packages/airlock
+bulwark-warden @ git+https://github.com/mk12002/Bulwark.git#subdirectory=packages/warden
