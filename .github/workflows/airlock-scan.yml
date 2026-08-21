@@ -39,7 +39,7 @@ jobs:
       contents: read
       security-events: write # required to upload SARIF
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Scan the poisoned fixture
         id: scan
@@ -98,7 +98,7 @@ jobs:
     name: Gate the build on findings
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Point `target` at your own model or MCP server. A finding at or above `fail-on`
       # exits non-zero and fails the job — no extra wiring needed.
