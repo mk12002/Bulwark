@@ -42,3 +42,6 @@ bulwark_breakdown/
 
 # MkDocs build output
 site/
+
+# Research paper draft (local only — not part of the distributed repo)
+paper/

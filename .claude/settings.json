@@ -8,7 +8,9 @@
       "Bash(./.venv/Scripts/python.exe -c ' *)",
       "Bash(./.venv/Scripts/python.exe -)",
       "Bash(./.venv/Scripts/python.exe -m ruff check packages/bulwark)",
-      "Bash(mkdir -p space)"
+      "Bash(mkdir -p space)",
+      "Bash(git rev-list *)",
+      "Bash(awk '{print \"behind:\"$1\"  ahead:\"$2}')"
     ]
   }
 }
