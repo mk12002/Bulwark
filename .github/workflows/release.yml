@@ -28,8 +28,8 @@ jobs:
     permissions:
       id-token: write # PyPI Trusted Publishing (OIDC)
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -40,12 +40,12 @@ jobs:
           twine check dist/*
 
       - name: Sign the artifacts (Sigstore, keyless via the workflow's OIDC identity)
-        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        uses: sigstore/gh-action-sigstore-python@v3.5.0
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
           upload-signing-artifacts: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-bulwark-core
           path: dist/
@@ -69,8 +69,8 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -81,12 +81,12 @@ jobs:
           twine check dist/*
 
       - name: Sign the artifacts (Sigstore, keyless via the workflow's OIDC identity)
-        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        uses: sigstore/gh-action-sigstore-python@v3.5.0
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
           upload-signing-artifacts: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.package }}
           path: dist/
@@ -105,8 +105,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -122,7 +122,7 @@ jobs:
           manifest scan . --format spdx      > bulwark-bom.spdx.json
           manifest scan . --govern --format md > bulwark-governance.md
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: bulwark-ai-bom
           path: |
